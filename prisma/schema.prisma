@@ -1,0 +1,122 @@
+// Obrix — esquema de base de datos
+// SQLite en dev → el esquema es compatible con PostgreSQL (sin enums de Prisma:
+// los "enums" se modelan como String + constantes/Zod en src/lib).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Usuario {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  nombre       String
+  rol          String     @default("CLIENTE") // ADMIN | COMERCIO | CLIENTE
+  createdAt    DateTime   @default(now())
+  comercio     Comercio?
+  cotizaciones Cotizacion[]
+  pedidos      Pedido[]
+}
+
+model Categoria {
+  id        String     @id @default(cuid())
+  nombre    String     @unique
+  orden     Int        @default(0)
+  productos Producto[]
+}
+
+model Producto {
+  id          String            @id @default(cuid())
+  sku         String            @unique
+  nombre      String
+  unidad      String // "bolsa 50 kg", "unidad", "m", "litro", "m²", ...
+  descripcion String            @default("")
+  categoriaId String
+  categoria   Categoria         @relation(fields: [categoriaId], references: [id])
+  ofertas     Oferta[]
+  itemsPedido ItemPedido[]
+  materiales  MaterialCotizacion[]
+  createdAt   DateTime          @default(now())
+}
+
+model Comercio {
+  id        String    @id @default(cuid())
+  nombre    String
+  direccion String
+  lat       Float
+  lng       Float
+  telefono  String    @default("")
+  activo    Boolean   @default(true)
+  ownerId   String    @unique
+  owner     Usuario   @relation(fields: [ownerId], references: [id])
+  ofertas   Oferta[]
+  pedidos   Pedido[]
+  createdAt DateTime  @default(now())
+}
+
+model Oferta {
+  id           String   @id @default(cuid())
+  comercioId   String
+  comercio     Comercio @relation(fields: [comercioId], references: [id])
+  productoId   String
+  producto     Producto @relation(fields: [productoId], references: [id])
+  precio       Float
+  stock        Int      @default(0) // -1 = sin control de stock
+  marca        String   @default("")
+  presentacion String   @default("")
+  activo       Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([comercioId, productoId])
+}
+
+model Cotizacion {
+  id        String              @id @default(cuid())
+  prompt    String // lo que pidió el usuario
+  estado    String              @default("BORRADOR") // BORRADOR | ENVIADA | COMPARADA
+  clienteId String?
+  cliente   Usuario?            @relation(fields: [clienteId], references: [id])
+  materiales MaterialCotizacion[]
+  pedidos   Pedido[]
+  createdAt DateTime            @default(now())
+}
+
+model MaterialCotizacion {
+  id           String     @id @default(cuid())
+  cotizacionId String
+  cotizacion   Cotizacion @relation(fields: [cotizacionId], references: [id])
+  productoId   String?
+  producto     Producto?  @relation(fields: [productoId], references: [id])
+  nombre       String // snapshot del material pedido por la IA
+  cantidad     Float
+  unidad       String
+}
+
+model Pedido {
+  id           String       @id @default(cuid())
+  clienteId    String
+  cliente      Usuario      @relation(fields: [clienteId], references: [id])
+  comercioId   String
+  comercio     Comercio     @relation(fields: [comercioId], references: [id])
+  cotizacionId String?
+  cotizacion   Cotizacion?  @relation(fields: [cotizacionId], references: [id])
+  estado       String       @default("PENDIENTE") // PENDIENTE | CONFIRMADO | PREPARADO | ENTREGADO | CANCELADO
+  total        Float        @default(0)
+  createdAt    DateTime     @default(now())
+  items        ItemPedido[]
+}
+
+model ItemPedido {
+  id            String   @id @default(cuid())
+  pedidoId      String
+  pedido        Pedido   @relation(fields: [pedidoId], references: [id])
+  productoId    String
+  producto      Producto @relation(fields: [productoId], references: [id])
+  cantidad      Float
+  precioUnitario Float // precio al momento de comprar
+}
