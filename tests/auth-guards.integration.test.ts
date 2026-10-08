@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { ROLES, type Role } from "@/lib/auth/constants";
 
 describe("Guards de autorización (estructura)", () => {
   it("guarda CLIENTE no accede a rutas COMERCIO/ADMIN (lógica)", () => {
-    const user = { role: "CLIENTE" as const };
-    const isAdmin = user.role === "ADMIN";
-    const isComercio = user.role === "COMERCIO";
+    const user = { role: ROLES.CLIENTE as Role };
+    const isAdmin = user.role === ROLES.ADMIN;
+    const isComercio = user.role === ROLES.COMERCIO;
     expect(isAdmin).toBe(false);
     expect(isComercio).toBe(false);
   });
