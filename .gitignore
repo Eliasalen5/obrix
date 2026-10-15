@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.vitest/
 
 # next.js
 /.next/
@@ -45,5 +46,7 @@ next-env.d.ts
 
 # prisma
 /src/generated
+/dev.db
+/*.db
 /prisma/dev.db
 /prisma/*.db

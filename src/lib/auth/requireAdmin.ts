@@ -7,7 +7,7 @@ export async function requireAdminSession() {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role as Role | undefined;
   if (!session || role !== ROLES.ADMIN) {
-    redirect("/api/auth/signin");
+    redirect("/ingresar");
   }
   return session;
 }

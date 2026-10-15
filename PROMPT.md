@@ -51,12 +51,27 @@ IA por API con clave en variable de entorno (modo demo sin clave).
 Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
 
 ## Fases
-1. Proyecto + PROMPT.md + DB + catálogo maestro seed + setup Vitest
-2. Auth + roles (tests 🔒 por rol)
-3. Panel admin: catálogo maestro (tests 🔒 admin)
-4. Panel comercio: activa productos y precios (tests 🔒 aislamiento)
-5. Asistente IA modo demo (tests 🔒 rate limit + validación)
-6. Cotizador + comparador (tests 💰)
-7. Cercanía: distancias y orden (tests 📍)
-8. Carrito + pedido (tests 🔀 flujo completo)
-9. UI final + deploy (E2E camino feliz)
+1. [x] Proyecto + PROMPT.md + DB + catálogo maestro seed + setup Vitest
+2. [x] Auth + roles (tests 🔒 por rol)
+3. [x] Panel admin: catálogo maestro (tests 🔒 admin)
+4. [x] Panel comercio: activa productos y precios (tests 🔒 aislamiento)
+5. [x] Asistente IA modo demo (tests 🔒 rate limit + validación)
+6. [x] Cotizador + comparador (tests 💰)
+7. [x] Cercanía: distancias y orden (tests 📍)
+8. [x] Carrito + pedido (tests 🔀 flujo completo)
+9. [x] UI final + E2E camino feliz (deploy ⏸️ pospuesto)
+
+## Estado de avance
+- **Fases 1–9 completadas y verificadas.**
+- UI final: home (landing Obrix), login `/ingresar` con credenciales demo,
+  shell con NavBar por rol, panel cliente (wizard asistente→cotizar→ranking→pedido
+  + mis pedidos) y panel comercio (pedidos recibidos + avance de estado).
+- E2E camino feliz a nivel API en Vitest (asistente → cotización → pedido →
+  cancelar → comercio ve y avanza estado), con Prisma stub en memoria.
+- Tests unitarios de clientes API: catálogo, oferta, asistente, cotización y pedidos.
+- **Verificación:** `npm test` 233/233 (27 archivos), `tsc --noEmit` 0 errores, `next build` OK.
+- **Deploy POSPUESTO:** demo corre sobre SQLite. Un deploy real requiere Postgres
+  hosteado (Prisma Postgres / Neon / Vercel Postgres / Supabase) porque el filesystem
+  de serverless es efímero. Pendiente cuando se retome.
+- Pendiente menor: `npm run lint` roto por conflicto preexistente
+  `eslint@9` vs `eslint-config-next@14` (no bloquea tests ni build).

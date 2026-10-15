@@ -83,6 +83,7 @@ model Cotizacion {
   cliente   Usuario?            @relation(fields: [clienteId], references: [id])
   materiales MaterialCotizacion[]
   pedidos   Pedido[]
+  resultadoJson String? // snapshot de la comparación al momento de cotizar (inmutable)
   createdAt DateTime            @default(now())
 }
 

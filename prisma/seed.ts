@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL });
@@ -128,7 +129,184 @@ const productosBase = [
   { sku: "OBR-080", nombre: "Cinta de Enmascarar", unidad: "rollo", categoria: "OTROS" },
 ] as const;
 
+const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "obrix1234";
+
+type OfertaSeed = { sku: string; precio: number; stock: number; marca: string };
+
+type ComercioSeed = {
+  email: string;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  lat: number;
+  lng: number;
+  ofertas: OfertaSeed[];
+};
+
+const comerciosDemo: ComercioSeed[] = [
+  {
+    email: "comercio@obrix.local",
+    nombre: "Ferretería Demo",
+    direccion: "Av. Siempre Viva 742",
+    telefono: "11-5555-5555",
+    lat: -34.6037,
+    lng: -58.3816,
+    ofertas: [
+      { sku: "OBR-001", precio: 12500, stock: 40, marca: "Loma Negra" },
+      { sku: "OBR-005", precio: 380, stock: 500, marca: "San Lorenzo" },
+      { sku: "OBR-014", precio: 1850, stock: 100, marca: "Acindar" },
+      { sku: "OBR-019", precio: 4200, stock: 30, marca: "Tigre" },
+      { sku: "OBR-026", precio: 950, stock: 200, marca: "Prysmian" },
+      { sku: "OBR-040", precio: 38000, stock: 15, marca: "Sherwin-Williams" },
+    ],
+  },
+  {
+    email: "comercio2@obrix.local",
+    nombre: "Corralón Sur",
+    direccion: "Av. Calchaquí 1500, Quilmes",
+    telefono: "11-4444-4444",
+    lat: -34.7245,
+    lng: -58.2551,
+    ofertas: [
+      { sku: "OBR-001", precio: 11500, stock: 120, marca: "Loma Negra" },
+      { sku: "OBR-002", precio: 11800, stock: 60, marca: "Loma Negra" },
+      { sku: "OBR-005", precio: 350, stock: 2000, marca: "San Lorenzo" },
+      { sku: "OBR-011", precio: 14000, stock: 25, marca: "Cantera Sur" },
+      { sku: "OBR-013", precio: 16500, stock: 20, marca: "Cantera Sur" },
+      { sku: "OBR-015", precio: 1900, stock: 150, marca: "Acindar" },
+      { sku: "OBR-019", precio: 4100, stock: 50, marca: "Tigre" },
+      { sku: "OBR-026", precio: 900, stock: 300, marca: "Prysmian" },
+      { sku: "OBR-047", precio: 9800, stock: 80, marca: "Weber" },
+    ],
+  },
+  {
+    email: "comercio3@obrix.local",
+    nombre: "Materiales Norte",
+    direccion: "Av. Maipú 2100, Olivos",
+    telefono: "11-3333-3333",
+    lat: -34.51,
+    lng: -58.49,
+    ofertas: [
+      { sku: "OBR-001", precio: 12000, stock: 60, marca: "Loma Negra" },
+      { sku: "OBR-005", precio: 375, stock: 800, marca: "San Lorenzo" },
+      { sku: "OBR-011", precio: 15500, stock: 15, marca: "Cantera Norte" },
+      { sku: "OBR-014", precio: 1950, stock: 40, marca: "Acindar" },
+      { sku: "OBR-040", precio: 39000, stock: 10, marca: "Sherwin-Williams" },
+      { sku: "OBR-078", precio: 1500, stock: 50, marca: "El Galgo" },
+    ],
+  },
+];
+
+async function seedUsuarios() {
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+
+  await prisma.usuario.upsert({
+    where: { email: "admin@obrix.local" },
+    create: {
+      email: "admin@obrix.local",
+      nombre: "Admin Obrix",
+      rol: "ADMIN",
+      passwordHash,
+    },
+    update: { rol: "ADMIN", passwordHash },
+  });
+
+  await prisma.usuario.upsert({
+    where: { email: "cliente@obrix.local" },
+    create: {
+      email: "cliente@obrix.local",
+      nombre: "Cliente Demo",
+      rol: "CLIENTE",
+      passwordHash,
+    },
+    update: { rol: "CLIENTE", passwordHash },
+  });
+
+  for (const c of comerciosDemo) {
+    const user = await prisma.usuario.upsert({
+      where: { email: c.email },
+      create: {
+        email: c.email,
+        nombre: c.nombre,
+        rol: "COMERCIO",
+        passwordHash,
+      },
+      update: { nombre: c.nombre, rol: "COMERCIO", passwordHash },
+    });
+
+    await prisma.comercio.upsert({
+      where: { ownerId: user.id },
+      create: {
+        nombre: c.nombre,
+        direccion: c.direccion,
+        lat: c.lat,
+        lng: c.lng,
+        telefono: c.telefono,
+        ownerId: user.id,
+      },
+      update: {
+        nombre: c.nombre,
+        direccion: c.direccion,
+        lat: c.lat,
+        lng: c.lng,
+        telefono: c.telefono,
+      },
+    });
+  }
+}
+
+async function seedOfertas(c: ComercioSeed) {
+  const user = await prisma.usuario.findUnique({
+    where: { email: c.email },
+    select: { id: true },
+  });
+  if (!user) return 0;
+
+  const comercio = await prisma.comercio.findUnique({
+    where: { ownerId: user.id },
+    select: { id: true },
+  });
+  if (!comercio) return 0;
+
+  let count = 0;
+  for (const o of c.ofertas) {
+    const producto = await prisma.producto.findUnique({
+      where: { sku: o.sku },
+      select: { id: true },
+    });
+    if (!producto) continue;
+
+    await prisma.oferta.upsert({
+      where: {
+        comercioId_productoId: {
+          comercioId: comercio.id,
+          productoId: producto.id,
+        },
+      },
+      create: {
+        comercioId: comercio.id,
+        productoId: producto.id,
+        precio: o.precio,
+        stock: o.stock,
+        marca: o.marca,
+        presentacion: "",
+        activo: true,
+      },
+      update: {
+        precio: o.precio,
+        stock: o.stock,
+        marca: o.marca,
+        activo: true,
+      },
+    });
+    count++;
+  }
+  return count;
+}
+
 async function main() {
+  await seedUsuarios();
+
   // upsert categorías
   for (const c of categorias) {
     await prisma.categoria.upsert({
@@ -161,7 +339,21 @@ async function main() {
     });
     created++;
   }
-  console.log(`Seed OK: ${created} productos upserted, categorías: ${categorias.length}`);
+  let ofertasCreadas = 0;
+  for (const c of comerciosDemo) {
+    ofertasCreadas += await seedOfertas(c);
+  }
+  const logins = [
+    "admin@obrix.local",
+    "cliente@obrix.local",
+    ...comerciosDemo.map((c) => c.email),
+  ];
+  console.log(
+    `Seed OK: ${2 + comerciosDemo.length} usuarios demo (admin + cliente + ${comerciosDemo.length} comercios), ${created} productos, ${categorias.length} categorías, ${ofertasCreadas} ofertas`,
+  );
+  console.log(
+    `Login demo (password: ${DEMO_PASSWORD}): ${logins.join(" | ")}`,
+  );
   await prisma.$disconnect();
 }
 
