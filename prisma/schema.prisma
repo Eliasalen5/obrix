@@ -1,6 +1,6 @@
 // Obrix — esquema de base de datos
-// SQLite en dev → el esquema es compatible con PostgreSQL (sin enums de Prisma:
-// los "enums" se modelan como String + constantes/Zod en src/lib).
+// PostgreSQL (Prisma Postgres) en todos los entornos. Sin enums de Prisma:
+// los "enums" se modelan como String + constantes/Zod en src/lib.
 
 generator client {
   provider = "prisma-client"
@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Usuario {
