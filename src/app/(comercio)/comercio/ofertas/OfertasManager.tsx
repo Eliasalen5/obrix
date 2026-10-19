@@ -5,6 +5,7 @@ import type { ZodError } from "zod";
 import {
   ofertaApi,
   type ApiResult,
+  type Categoria,
   type Oferta,
   type Producto,
 } from "@/lib/api/ofertaClient";
@@ -12,6 +13,7 @@ import {
   createOfertaSchema,
   updateOfertaSchema,
 } from "@/lib/validators/oferta";
+import { normalizarTexto } from "@/lib/services/cotizador.service";
 
 type Mensaje = { tipo: "ok" | "error"; texto: string };
 
@@ -44,6 +46,9 @@ export default function OfertasManager() {
   const [ofertas, setOfertas] = useState<Oferta[]>([]);
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [busquedaOfertas, setBusquedaOfertas] = useState("");
 
   const [altaId, setAltaId] = useState<string | null>(null);
   const [alta, setAlta] = useState<AltaForm>(ALTA_VACIA);
@@ -73,6 +78,39 @@ export default function OfertasManager() {
     for (const o of ofertas) mapa.set(o.productoId, o);
     return mapa;
   }, [ofertas]);
+
+  const productosVisibles = useMemo(() => {
+    const q = normalizarTexto(busqueda);
+    return productos.filter((p) => {
+      if (filtroCategoria && p.categoriaId !== filtroCategoria) return false;
+      if (q === "") return true;
+      return normalizarTexto(
+        `${p.sku} ${p.nombre} ${p.unidad} ${p.descripcion}`,
+      ).includes(q);
+    });
+  }, [productos, busqueda, filtroCategoria]);
+
+  const hayFiltroCatalogo = busqueda.trim() !== "" || filtroCategoria !== "";
+
+  const categoriasVisibles = useMemo(() => {
+    const mapa = new Map<string, Categoria>();
+    for (const p of productos) {
+      if (p.categoria) mapa.set(p.categoria.id, p.categoria);
+    }
+    return [...mapa.values()].sort(
+      (a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre),
+    );
+  }, [productos]);
+
+  const ofertasVisibles = useMemo(() => {
+    const q = normalizarTexto(busquedaOfertas);
+    if (q === "") return ofertas;
+    return ofertas.filter((o) =>
+      normalizarTexto(
+        `${o.producto?.nombre ?? ""} ${o.producto?.sku ?? ""} ${o.marca}`,
+      ).includes(q),
+    );
+  }, [ofertas, busquedaOfertas]);
 
   const reportar = useCallback(
     async (promesa: Promise<ApiResult<unknown>>, exito: string) => {
@@ -173,11 +211,21 @@ export default function OfertasManager() {
         <h2 className="text-lg font-medium">
           Ofertas activas ({ofertas.length})
         </h2>
+        <input
+          className={`${inputCls} mt-2`}
+          placeholder="Buscar por producto, SKU o marca"
+          value={busquedaOfertas}
+          onChange={(e) => setBusquedaOfertas(e.target.value)}
+        />
         {cargando ? (
           <p className="mt-2 text-sm text-gray-500">Cargando…</p>
         ) : ofertas.length === 0 ? (
           <p className="mt-2 text-sm text-gray-500">
             Todavía no activaste productos.
+          </p>
+        ) : ofertasVisibles.length === 0 ? (
+          <p className="mt-2 text-sm text-gray-500">
+            Sin resultados para esa búsqueda.
           </p>
         ) : (
           <table className="mt-2 w-full border-collapse text-sm">
@@ -192,7 +240,7 @@ export default function OfertasManager() {
               </tr>
             </thead>
             <tbody>
-              {ofertas.map((o) =>
+              {ofertasVisibles.map((o) =>
                 editId === o.id ? (
                   <tr key={o.id} className="border-b">
                     <td className="py-1 pr-2">
@@ -286,6 +334,41 @@ export default function OfertasManager() {
         <h2 className="text-lg font-medium">
           Catálogo maestro ({productos.length})
         </h2>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            className={`${inputCls} min-w-56`}
+            placeholder="Buscar por nombre, SKU o unidad"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+          <select
+            className={inputCls}
+            value={filtroCategoria}
+            onChange={(e) => setFiltroCategoria(e.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {categoriasVisibles.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+          <span className="text-sm text-gray-500">
+            Mostrando {productosVisibles.length} de {productos.length}
+          </span>
+          {hayFiltroCatalogo && (
+            <button
+              type="button"
+              onClick={() => {
+                setBusqueda("");
+                setFiltroCategoria("");
+              }}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
         <table className="mt-2 w-full border-collapse text-sm">
           <thead>
             <tr className="border-b text-left">
@@ -296,7 +379,7 @@ export default function OfertasManager() {
             </tr>
           </thead>
           <tbody>
-            {productos.map((p) => {
+            {productosVisibles.map((p) => {
               const yaActivado = ofertaPorProducto.has(p.id);
               return altaId === p.id ? (
                 <tr key={p.id} className="border-b">
@@ -371,6 +454,15 @@ export default function OfertasManager() {
                 </tr>
               );
             })}
+            {productosVisibles.length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-2 text-gray-500">
+                  {hayFiltroCatalogo
+                    ? "Sin resultados para esa búsqueda."
+                    : "Sin productos."}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>

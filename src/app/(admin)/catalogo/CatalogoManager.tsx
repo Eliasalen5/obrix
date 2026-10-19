@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from "react";
 import type { ZodError } from "zod";
 import {
   catalogoApi,
@@ -12,6 +18,7 @@ import {
   createCategoriaSchema,
   createProductoSchema,
 } from "@/lib/validators/catalogo";
+import { normalizarTexto } from "@/lib/services/cotizador.service";
 
 type Mensaje = { tipo: "ok" | "error"; texto: string };
 
@@ -41,6 +48,8 @@ export default function CatalogoManager() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
 
   const [catForm, setCatForm] = useState<CatForm>(VACIO_CAT);
   const [catEditId, setCatEditId] = useState<string | null>(null);
@@ -175,6 +184,20 @@ export default function CatalogoManager() {
     if (!confirm("¿Eliminar este producto?")) return;
     await reportar(catalogoApi.deleteProducto(id), "Producto eliminado");
   }
+
+  const productosVisibles = useMemo(() => {
+    const q = normalizarTexto(busqueda);
+    return productos.filter((p) => {
+      if (filtroCategoria && p.categoriaId !== filtroCategoria) return false;
+      if (q === "") return true;
+      const haystack = normalizarTexto(
+        `${p.sku} ${p.nombre} ${p.unidad} ${p.descripcion}`,
+      );
+      return haystack.includes(q);
+    });
+  }, [productos, busqueda, filtroCategoria]);
+
+  const hayFiltro = busqueda.trim() !== "" || filtroCategoria !== "";
 
   return (
     <div className="mt-6 flex flex-col gap-10">
@@ -354,6 +377,42 @@ export default function CatalogoManager() {
           </button>
         </form>
 
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            className={`${inputCls} min-w-56`}
+            placeholder="Buscar por nombre, SKU o unidad"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+          <select
+            className={inputCls}
+            value={filtroCategoria}
+            onChange={(e) => setFiltroCategoria(e.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+          <span className="text-sm text-zinc-500">
+            Mostrando {productosVisibles.length} de {productos.length}
+          </span>
+          {hayFiltro && (
+            <button
+              type="button"
+              onClick={() => {
+                setBusqueda("");
+                setFiltroCategoria("");
+              }}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+
         {cargando ? (
           <p className="mt-3 text-sm text-zinc-500">Cargando…</p>
         ) : (
@@ -368,7 +427,7 @@ export default function CatalogoManager() {
               </tr>
             </thead>
             <tbody>
-              {productos.map((p) =>
+              {productosVisibles.map((p) =>
                 prodEditId === p.id ? (
                   <tr
                     key={p.id}
@@ -476,10 +535,12 @@ export default function CatalogoManager() {
                   </tr>
                 ),
               )}
-              {productos.length === 0 && (
+              {productosVisibles.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-2 text-zinc-500">
-                    Sin productos.
+                    {hayFiltro
+                      ? "Sin resultados para esa búsqueda."
+                      : "Sin productos."}
                   </td>
                 </tr>
               )}
