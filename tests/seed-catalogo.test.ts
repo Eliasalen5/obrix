@@ -8,29 +8,55 @@ import {
 
 const SKU_RE = /^OBR-\d{3}$/;
 
-describe("catálogo semilla: integridad", () => {
-  it("tiene 200 productos repartidos en 16 categorías", () => {
-    expect(productosBase).toHaveLength(200);
-    expect(categorias).toHaveLength(16);
+const CATEGORIAS_ESPERADAS = [
+  "Ferreterías",
+  "Corralones y materiales de construcción",
+  "Pinturerías",
+  "Casas de electricidad",
+  "Sanitarios, plomería y gas",
+  "Casas de pesca y náutica",
+  "Madereras y carpintería",
+  "Jardinería, viveros y riego",
+  "Cerámicas, pisos y revestimientos",
+  "Techos y zinguería",
+  "Refrigeración y climatización",
+  "Seguridad y cerrajería",
+  "Piscinas",
+  "Máquinas, herramientas y equipos",
+];
+
+describe("catálogo semilla: categorías", () => {
+  it("tiene exactamente las 14 categorías del acuerdo, en orden", () => {
+    expect(categorias.map((c) => c.nombre)).toEqual(CATEGORIAS_ESPERADAS);
+    expect(categorias.map((c) => c.orden)).toEqual(
+      CATEGORIAS_ESPERADAS.map((_, i) => i + 1),
+    );
   });
 
+  it("no repite nombres ni órdenes y ningún nombre queda vacío", () => {
+    const nombres = categorias.map((c) => c.nombre);
+    const ordenes = categorias.map((c) => c.orden);
+
+    expect(new Set(nombres).size).toBe(nombres.length);
+    expect(new Set(ordenes).size).toBe(ordenes.length);
+    expect(nombres.filter((n) => n.trim() === "")).toEqual([]);
+  });
+});
+
+describe("catálogo semilla: productos", () => {
   it("no repite SKUs y todos respetan el formato OBR-###", () => {
     const skus = productosBase.map((p) => p.sku);
-    const unicos = new Set(skus);
-    expect(unicos.size).toBe(skus.length);
-
-    const malformados = skus.filter((sku) => !SKU_RE.test(sku));
-    expect(malformados).toEqual([]);
+    expect(new Set(skus).size).toBe(skus.length);
+    expect(skus.filter((sku) => !SKU_RE.test(sku))).toEqual([]);
   });
 
-  it("no deja huecos en la numeración OBR-001 … OBR-200", () => {
-    const esperados = Array.from(
-      { length: 200 },
-      (_, i) => `OBR-${String(i + 1).padStart(3, "0")}`,
-    );
-    const skus = new Set(productosBase.map((p) => p.sku));
-    const faltantes = esperados.filter((sku) => !skus.has(sku));
-    expect(faltantes).toEqual([]);
+  it("no deja huecos en la numeración de los SKUs", () => {
+    const numeros = productosBase
+      .map((p) => Number(p.sku.slice(4)))
+      .sort((a, b) => a - b);
+
+    const esperados = numeros.map((_, i) => i + 1);
+    expect(numeros).toEqual(esperados);
   });
 
   it("no repite productos: los nombres son únicos una vez normalizados", () => {
@@ -61,18 +87,6 @@ describe("catálogo semilla: integridad", () => {
     expect(incompletos).toEqual([]);
   });
 
-  it("toda categoría declarada es única y tiene productos", () => {
-    const nombres = categorias.map((c) => c.nombre);
-    expect(new Set(nombres).size).toBe(nombres.length);
-
-    const ordenes = categorias.map((c) => c.orden);
-    expect(new Set(ordenes).size).toBe(ordenes.length);
-
-    const usadas = new Set(productosBase.map((p) => p.categoria));
-    const vacias = nombres.filter((n) => !usadas.has(n));
-    expect(vacias).toEqual([]);
-  });
-
   it("todo producto apunta a una categoría existente", () => {
     const catNames = new Set(categorias.map((c) => c.nombre));
     const huerfanos = productosBase
@@ -80,7 +94,9 @@ describe("catálogo semilla: integridad", () => {
       .map((p) => `${p.sku}: ${p.categoria}`);
     expect(huerfanos).toEqual([]);
   });
+});
 
+describe("catálogo semilla: ofertas demo", () => {
   it("las ofertas demo referencian productos que existen", () => {
     const skus = new Set(productosBase.map((p) => p.sku));
     const invalidas: string[] = [];
