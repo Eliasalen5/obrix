@@ -14,10 +14,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl =
+  process.env.NEXTAUTH_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+
 export const metadata: Metadata = {
+  ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
   title: "Obrix",
   description:
     "Obrix: describí tu proyecto, calculá materiales, compará comercios y hacé tu pedido.",
+  applicationName: "Obrix",
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
+  openGraph: {
+    title: "Obrix",
+    description:
+      "Describí tu proyecto, calculá materiales, compará comercios y hacé tu pedido.",
+    siteName: "Obrix",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Obrix",
+    description:
+      "Describí tu proyecto, calculá materiales, compará comercios y hacé tu pedido.",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

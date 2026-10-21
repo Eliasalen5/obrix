@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { ROLES, type Role } from "@/lib/auth/constants";
@@ -40,8 +41,15 @@ export default function NavBar() {
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          Obrix
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo-obrix.webp"
+            alt="Obrix"
+            width={128}
+            height={128}
+            priority
+            className="h-10 w-auto"
+          />
         </Link>
 
         <nav className="flex flex-wrap items-center gap-4 text-sm">
