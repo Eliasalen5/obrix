@@ -1,5 +1,11 @@
-import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
-import { RateLimiter, MemoryRateLimitStore, resolveLimitPerMin } from "@/lib/rate-limit";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import {
+  RateLimiter,
+  MemoryRateLimitStore,
+  resolveLimitPerMin,
+  resolveLoginLimitPerMin,
+  LOGIN_LIMIT_PER_MIN,
+} from "@/lib/rate-limit";
 
 describe("rate-limit", () => {
   beforeEach(() => {
@@ -40,5 +46,15 @@ describe("rate-limit", () => {
     expect(resolveLimitPerMin({ RATE_LIMIT_PER_MIN: "0" } as any)).toBe(10);
     expect(resolveLimitPerMin({ RATE_LIMIT_PER_MIN: "-5" } as any)).toBe(10);
     expect(resolveLimitPerMin({ RATE_LIMIT_PER_MIN: "3" } as any)).toBe(3);
+  });
+
+  it("resolveLoginLimitPerMin usa default y respeta override", () => {
+    expect(resolveLoginLimitPerMin({} as any)).toBe(LOGIN_LIMIT_PER_MIN);
+    expect(resolveLoginLimitPerMin({ LOGIN_RATE_LIMIT_PER_MIN: "0" } as any)).toBe(
+      LOGIN_LIMIT_PER_MIN,
+    );
+    expect(
+      resolveLoginLimitPerMin({ LOGIN_RATE_LIMIT_PER_MIN: "2" } as any),
+    ).toBe(2);
   });
 });

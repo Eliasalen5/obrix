@@ -168,13 +168,21 @@ export const pedidoService = {
     });
     if (!pedido) return { ok: false, motivo: "NO_ENCONTRADO" };
 
-    if (!puedeTransicionar(ROLES.COMERCIO, pedido.estado as EstadoPedido, nuevo)) {
+    const estadoActual = pedido.estado as EstadoPedido;
+    if (!puedeTransicionar(ROLES.COMERCIO, estadoActual, nuevo)) {
       return { ok: false, motivo: "TRANSICION" };
     }
 
-    const actualizado = await prisma.pedido.update({
-      where: { id },
+    // Condicionado al estado leído: si otro cambio concurrente ya movió el
+    // pedido, no pisamos ese resultado (0 filas = carrera → 409 en la ruta).
+    const resultado = await prisma.pedido.updateMany({
+      where: { id, comercioId, estado: estadoActual },
       data: { estado: nuevo },
+    });
+    if (resultado.count === 0) return { ok: false, motivo: "TRANSICION" };
+
+    const actualizado = await prisma.pedido.findUniqueOrThrow({
+      where: { id },
       include: detallePedido,
     });
     return { ok: true, pedido: actualizado as PedidoDetalle };
@@ -190,13 +198,19 @@ export const pedidoService = {
     });
     if (!pedido) return { ok: false, motivo: "NO_ENCONTRADO" };
 
-    if (!puedeTransicionar(ROLES.CLIENTE, pedido.estado as EstadoPedido, "CANCELADO")) {
+    const estadoActual = pedido.estado as EstadoPedido;
+    if (!puedeTransicionar(ROLES.CLIENTE, estadoActual, "CANCELADO")) {
       return { ok: false, motivo: "TRANSICION" };
     }
 
-    const actualizado = await prisma.pedido.update({
-      where: { id },
+    const resultado = await prisma.pedido.updateMany({
+      where: { id, clienteId, estado: estadoActual },
       data: { estado: "CANCELADO" },
+    });
+    if (resultado.count === 0) return { ok: false, motivo: "TRANSICION" };
+
+    const actualizado = await prisma.pedido.findUniqueOrThrow({
+      where: { id },
       include: detallePedido,
     });
     return { ok: true, pedido: actualizado as PedidoDetalle };

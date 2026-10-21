@@ -13,7 +13,8 @@ export function haversineKm(
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const haversine = Math.min(1, Math.max(0, a));
+  const c = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
   return RADIO_TIERRA_KM * c;
 }
 

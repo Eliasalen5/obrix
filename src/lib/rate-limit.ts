@@ -89,3 +89,23 @@ export const asistenteRateLimiter = new RateLimiter(
   resolveLimitPerMin(),
   RATE_LIMIT_WINDOW_MS,
 );
+
+/**
+ * Limiter para intentos de login (credenciales). Clave por email normalizado:
+ * mitiga fuerza bruta / credential stuffing contra una cuenta. Límite más
+ * estricto que el del asistente porque bcrypt es costoso en CPU.
+ */
+export const LOGIN_LIMIT_PER_MIN = 8;
+
+export const loginRateLimiter = new RateLimiter(
+  resolveLoginLimitPerMin(),
+  RATE_LIMIT_WINDOW_MS,
+);
+
+export function resolveLoginLimitPerMin(
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  const raw = Number(env.LOGIN_RATE_LIMIT_PER_MIN);
+  if (!Number.isFinite(raw) || raw <= 0) return LOGIN_LIMIT_PER_MIN;
+  return Math.floor(raw);
+}
