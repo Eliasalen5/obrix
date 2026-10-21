@@ -39,7 +39,10 @@ export default function NavBar() {
   const enlaces = role ? ENLACES[role] : [];
 
   return (
-    <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <header
+      className="border-b border-white/10"
+      style={{ backgroundColor: "#01162f" }}
+    >
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
         <Link href="/" className="flex items-center">
           <Image
@@ -62,8 +65,8 @@ export default function NavBar() {
                 href={enlace.href}
                 className={
                   activo
-                    ? "font-medium text-zinc-900 dark:text-zinc-50"
-                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    ? "font-medium text-white"
+                    : "text-blue-200/80 hover:text-white"
                 }
               >
                 {enlace.label}
@@ -75,13 +78,13 @@ export default function NavBar() {
         <div className="ml-auto flex items-center gap-3 text-sm">
           {status === "loading" ? null : role ? (
             <>
-              <span className="text-zinc-500 dark:text-zinc-400">
+              <span className="text-blue-200/80">
                 {session?.user?.name ?? session?.user?.email} ·{" "}
                 {ETIQUETA_ROL[role]}
               </span>
               <button
                 onClick={() => void signOut({ callbackUrl: "/" })}
-                className="rounded border border-zinc-300 px-2 py-1 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                className="rounded border border-white/30 px-2 py-1 text-white hover:bg-white/10"
               >
                 Salir
               </button>
@@ -89,7 +92,7 @@ export default function NavBar() {
           ) : (
             <Link
               href="/ingresar"
-              className="rounded bg-zinc-900 px-3 py-1 text-white dark:bg-zinc-100 dark:text-zinc-900"
+              className="rounded bg-white px-3 py-1 text-[#01162f] hover:bg-blue-50"
             >
               Ingresar
             </Link>
