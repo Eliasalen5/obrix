@@ -107,27 +107,37 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
 9.  [x] UI final + E2E camino feliz (web)
 10. [x] Catálogo sin duplicados: propuestas del comercio + revisión admin
         (tests 🔁 duplicados / transacción / aislamiento)
-11. [ ] Migración a PostgreSQL + migraciones versionadas (dev y prod)
+11. [x] Migración a PostgreSQL + migraciones versionadas (dev y prod)
 12. [ ] API versionada y contrato estable + auth por token Bearer (base mobile)
 13. [ ] App mobile (Expo) para CLIENTE: proyecto, cotización, pedidos
 14. [ ] Capacidades nativas mobile (push, geolocalización, cámara código de barras)
-15. [ ] Hardening y escalabilidad: rate limit con store compartido, README,
-        limpieza de residuos, `npm audit`
+15. [~] Hardening y escalabilidad: README [x], limpieza de residuos [x],
+        `npm audit` [x], rate limit con store compartido [ ] PENDIENTE
 
 ## Estado de avance
-- **Fases 1–10 completadas y verificadas.**
+- **Fases 1–11 completadas y verificadas.** Fase 15 parcial (ver pendientes).
 - Web: home (landing Obrix), login `/ingresar` con credenciales demo, shell con
   NavBar por rol, panel cliente (wizard asistente→cotizar→ranking→pedido + mis
   pedidos), panel comercio (ofertas + solicitudes + pedidos) y panel admin
   (catálogo + `/solicitudes`).
-- DB: **PostgreSQL (Prisma Postgres)** en dev y prod, con migraciones versionadas.
+- DB: **PostgreSQL (Prisma Postgres)** en dev y prod, con migraciones versionadas
+  (`prisma migrate status`: schema up to date). Deploy web en Vercel.
 - E2E camino feliz a nivel API en Vitest (asistente → cotización → pedido →
   cancelar → comercio ve y avanza estado), con Prisma stub en memoria.
 - Tests unitarios de clientes API: catálogo, oferta, asistente, cotización,
   pedidos y solicitudes.
-- **Verificación:** `npm test` 301/301 (32 archivos), `tsc --noEmit` 0 errores,
+- **Verificación:** `npm test` 308/308 (33 archivos), `tsc --noEmit` 0 errores,
   `next build` OK.
-- **Deploy POSPUESTO.** Demo sobre Prisma Postgres (ya no SQLite).
-- **Deuda técnica conocida:** rate limit en memoria (por instancia); `README.md`
-  sigue siendo boilerplate de create-next-app; residuo `prisma/dev.db` de la
-  etapa SQLite; `npm run lint` con warnings no bloqueantes.
+- **Deploy:** web en Vercel sobre Prisma Postgres.
+
+## PENDIENTES (recordatorio)
+- **[Fase 15] Rate limit con store compartido.** Hoy el conteo vive en memoria
+  (`MemoryRateLimitStore`), por instancia de proceso. En Vercel (serverless, multi
+  instancia) el límite real es "por instancia", no global. FALTA: implementar el
+  store compartido (Redis/Upstash, plan gratis cubre de sobra) detrás de la
+  interfaz `RateLimitStore` ya existente. Sin tráfico real hoy, no es urgente.
+- **[Fases 12–14] Roadmap mobile:** API versionada + auth Bearer, app Expo,
+  capacidades nativas.
+- `npm audit`: 5 vulnerabilidades high, todas de `eslint-config-next` (tooling de
+  lint, NO runtime). Solo se arreglan con `--force` (breaking: baja a v14) → no
+  aplicar. Sin acción hasta que el upstream lo resuelva.
