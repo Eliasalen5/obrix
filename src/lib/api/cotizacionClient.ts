@@ -15,7 +15,7 @@ export type {
   MaterialCotizado,
 } from "@/lib/validators/cotizacion";
 
-const BASE = "/api/cotizaciones";
+const BASE = "/api/v1/cotizaciones";
 
 export const cotizacionApi = {
   crear: (data: CrearCotizacionInput) =>

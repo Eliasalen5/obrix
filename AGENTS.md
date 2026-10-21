@@ -72,8 +72,13 @@ errores + `npm run build` OK.
 
 ## Mobile (roadmap — ver `PROMPT.md`)
 - Objetivo: React Native + Expo reutilizando validadores y clientes API.
-- Autenticación por token `Authorization: Bearer ...` (sin cookies), token en
-  almacenamiento seguro. La API debe poder extraerse/versionarse como contrato
-  estable sin duplicar la lógica de `src/lib/services`.
-- Al preparar la API para mobile, no romper a la web: cambios compatibles o
-  versionados (`/api/v1`).
+- **Contrato estable ya disponible (Fase 12):** handlers canónicos en `/api/v1/*`.
+  `/api/*` sigue vivo como alias legacy (rewrite + `Deprecation`/`Link`) vía
+  `src/proxy.ts`; no agregar rutas nuevas ahí, siempre en `/api/v1`.
+- **Auth:** acepta cookie (web) o `Authorization: Bearer <jwt>` (mobile). El JWT
+  es el mismo de NextAuth (`src/lib/auth/token.ts` resuelve la identidad y respeta
+  la revocación `token.invalid`). Login mobile: `POST /api/v1/auth/token`
+  (`{email,password}` → `{data:{token,expiresIn,user}}`); reutiliza
+  `verifyCredentials` (Zod + rate limit + bcrypt), sin lógica duplicada.
+- Al extender la API para mobile, no romper a la web: cambios compatibles o
+  versionados (`/api/v2`). El token va en almacenamiento seguro del dispositivo.

@@ -33,7 +33,7 @@ describe("cliente API asistente (fetch)", () => {
     expect(res).toEqual({ ok: true, data: RESPUESTA });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/asistente");
+    expect(url).toBe("/api/v1/asistente");
     expect(init.method).toBe("POST");
     expect(init.headers["content-type"]).toBe("application/json");
     expect(JSON.parse(init.body)).toEqual({

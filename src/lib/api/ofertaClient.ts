@@ -20,7 +20,7 @@ export type Oferta = {
   producto?: Producto;
 };
 
-const BASE = "/api/comercio";
+const BASE = "/api/v1/comercio";
 
 export const ofertaApi = {
   listCatalogo: (opts?: { q?: string; categoriaId?: string }) => {

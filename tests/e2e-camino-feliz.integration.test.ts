@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { resolveIdentity } from "@/lib/auth/token";
 import { ROLES, type Role } from "@/lib/auth/constants";
 
-import * as asistenteRoute from "@/app/api/asistente/route";
-import * as cotizacionesRoute from "@/app/api/cotizaciones/route";
-import * as pedidosRoute from "@/app/api/pedidos/route";
-import * as pedidoByIdRoute from "@/app/api/pedidos/[id]/route";
-import * as comercioPedidosRoute from "@/app/api/comercio/pedidos/route";
-import * as comercioPedidoByIdRoute from "@/app/api/comercio/pedidos/[id]/route";
+import * as asistenteRoute from "@/app/api/v1/asistente/route";
+import * as cotizacionesRoute from "@/app/api/v1/cotizaciones/route";
+import * as pedidosRoute from "@/app/api/v1/pedidos/route";
+import * as pedidoByIdRoute from "@/app/api/v1/pedidos/[id]/route";
+import * as comercioPedidosRoute from "@/app/api/v1/comercio/pedidos/route";
+import * as comercioPedidoByIdRoute from "@/app/api/v1/comercio/pedidos/[id]/route";
 
-vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
+vi.mock("@/lib/auth/token", () => ({ resolveIdentity: vi.fn() }));
 vi.mock("@/lib/ai/config", () => ({
   resolveAiConfig: () => ({
     demo: true,
@@ -24,7 +24,7 @@ vi.mock("@/lib/ai/config", () => ({
 }));
 
 type SessionMock = ReturnType<typeof vi.fn>;
-const sessionMock = getServerSession as unknown as SessionMock;
+const sessionMock = resolveIdentity as unknown as SessionMock;
 
 type Producto = {
   id: string;
@@ -501,10 +501,10 @@ beforeEach(() => {
 });
 
 function sessionCliente() {
-  sessionMock.mockResolvedValue({ user: { id: "u1", role: ROLES.CLIENTE as Role }, expires: "" });
+  sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.CLIENTE as Role });
 }
 function sessionComercio() {
-  sessionMock.mockResolvedValue({ user: { id: "u2", role: ROLES.COMERCIO as Role }, expires: "" });
+  sessionMock.mockResolvedValue({ userId: "u2", role: ROLES.COMERCIO as Role });
 }
 
 describe("E2E camino feliz (API)", () => {

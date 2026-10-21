@@ -28,7 +28,7 @@ describe("cliente API catálogo (fetch)", () => {
       data: [{ id: "c1", nombre: "Arena", orden: 0 }],
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/admin/catalogo/categorias",
+      "/api/v1/admin/catalogo/categorias",
       expect.anything(),
     );
   });
@@ -88,7 +88,7 @@ describe("cliente API catálogo (fetch)", () => {
     });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/admin/catalogo/productos");
+    expect(url).toBe("/api/v1/admin/catalogo/productos");
     expect(init.method).toBe("POST");
     expect(init.headers["content-type"]).toBe("application/json");
     expect(JSON.parse(init.body)).toEqual({

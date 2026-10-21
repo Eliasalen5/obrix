@@ -28,7 +28,7 @@ export type Producto = {
   marca?: string;
 };
 
-const BASE = "/api/admin/catalogo";
+const BASE = "/api/v1/admin/catalogo";
 
 export const catalogoApi = {
   listCategorias: () => request<Categoria[]>(`${BASE}/categorias`),

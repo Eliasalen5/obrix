@@ -39,8 +39,8 @@ export type CrearPedidoInput = {
   comercioId: string;
 };
 
-const BASE = "/api/pedidos";
-const BASE_COMERCIO = "/api/comercio/pedidos";
+const BASE = "/api/v1/pedidos";
+const BASE_COMERCIO = "/api/v1/comercio/pedidos";
 
 export const pedidoApi = {
   listar: () => request<Pedido[]>(BASE),

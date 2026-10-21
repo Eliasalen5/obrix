@@ -3,11 +3,9 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import type { Adapter } from "next-auth/adapters";
-import { loginSchema } from "@/lib/validators/auth";
-import { verifyPassword } from "@/lib/services/auth.service";
-import { loginRateLimiter } from "@/lib/rate-limit";
 import { ROLES, type Role } from "@/lib/auth/constants";
 import type { SessionUser } from "@/lib/auth/sessionUser";
+import { verifyCredentials } from "@/lib/auth/credentials";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma as unknown as Adapter),
@@ -20,27 +18,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const parsed = loginSchema.safeParse(credentials);
-        if (!parsed.success) return null;
-
-        // Rate limit por email antes de tocar la DB/bcrypt (mitiga fuerza bruta).
-        const limit = loginRateLimiter.check(`login:${parsed.data.email}`);
-        if (!limit.allowed) return null;
-
-        const { email, password } = parsed.data;
-        const user = await prisma.usuario.findUnique({
-          where: { email },
-          select: { id: true, email: true, nombre: true, rol: true, passwordHash: true },
-        });
-        if (!user?.passwordHash) return null;
-        const ok = await verifyPassword(password, user.passwordHash);
-        if (!ok) return null;
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.nombre,
-          role: user.rol as Role,
-        };
+        return verifyCredentials(credentials);
       },
     }),
   ],

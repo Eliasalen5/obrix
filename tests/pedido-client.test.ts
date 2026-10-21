@@ -21,7 +21,7 @@ describe("cliente API pedidos (cliente) (fetch)", () => {
     const res = await pedidoApi.listar();
 
     expect(res).toEqual({ ok: true, data: [{ id: "p1" }] });
-    expect(fetchMock).toHaveBeenCalledWith("/api/pedidos", expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/pedidos", expect.anything());
   });
 
   it("crear hace POST con cotizacionId y comercioId", async () => {
@@ -32,7 +32,7 @@ describe("cliente API pedidos (cliente) (fetch)", () => {
     await pedidoApi.crear({ cotizacionId: "cot1", comercioId: "com1" });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/pedidos");
+    expect(url).toBe("/api/v1/pedidos");
     expect(init.method).toBe("POST");
     expect(init.headers["content-type"]).toBe("application/json");
     expect(JSON.parse(init.body)).toEqual({
@@ -48,7 +48,7 @@ describe("cliente API pedidos (cliente) (fetch)", () => {
 
     await pedidoApi.obtener("p9");
 
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/pedidos/p9");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/pedidos/p9");
   });
 
   it("cancelar hace PATCH con estado CANCELADO", async () => {
@@ -62,7 +62,7 @@ describe("cliente API pedidos (cliente) (fetch)", () => {
     await pedidoApi.cancelar("p1");
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/pedidos/p1");
+    expect(url).toBe("/api/v1/pedidos/p1");
     expect(init.method).toBe("PATCH");
     expect(init.headers["content-type"]).toBe("application/json");
     expect(JSON.parse(init.body)).toEqual({ estado: "CANCELADO" });
@@ -105,7 +105,7 @@ describe("cliente API pedidos (comercio) (fetch)", () => {
 
     expect(res).toEqual({ ok: true, data: [] });
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/comercio/pedidos",
+      "/api/v1/comercio/pedidos",
       expect.anything(),
     );
   });
@@ -117,7 +117,7 @@ describe("cliente API pedidos (comercio) (fetch)", () => {
 
     await comercioPedidoApi.obtener("p9");
 
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/comercio/pedidos/p9");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/comercio/pedidos/p9");
   });
 
   it("cambiarEstado hace PATCH con el estado", async () => {
@@ -131,7 +131,7 @@ describe("cliente API pedidos (comercio) (fetch)", () => {
     await comercioPedidoApi.cambiarEstado("p1", "CONFIRMADO");
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/comercio/pedidos/p1");
+    expect(url).toBe("/api/v1/comercio/pedidos/p1");
     expect(init.method).toBe("PATCH");
     expect(init.headers["content-type"]).toBe("application/json");
     expect(JSON.parse(init.body)).toEqual({ estado: "CONFIRMADO" });

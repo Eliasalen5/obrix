@@ -1,5 +1,6 @@
-import { getServerSession } from "next-auth";
 import { authOptions } from "./options";
+import { getServerSession } from "next-auth";
+import { resolveIdentity } from "./token";
 import {
   decideAccess,
   ASISTENTE_ALLOWED_ROLES,
@@ -19,6 +20,10 @@ export type AuthenticatedAccess =
 
 export type ComercioAccess = AuthenticatedAccess;
 
+/**
+ * Rol del usuario para UI que corre en el servidor (server components). Se lee
+ * de la sesión con cookie; el Bearer es solo para la API móvil.
+ */
 export async function getSessionRole(): Promise<Role | undefined> {
   const session = await getServerSession(authOptions);
   return (session?.user as { role?: Role } | undefined)?.role;
@@ -27,25 +32,23 @@ export async function getSessionRole(): Promise<Role | undefined> {
 async function requireAuthenticatedApi(
   allowed: readonly Role[],
 ): Promise<AuthenticatedAccess> {
-  const session = await getServerSession(authOptions);
-  const user = session?.user as { id?: string; role?: Role } | undefined;
+  const identity = await resolveIdentity();
 
-  const decision = decideAccess(user?.role, allowed);
+  const decision = decideAccess(identity?.role, allowed);
   if (!decision.ok) return decision;
-  if (!user?.id) return { ok: false, status: 401, error: "No autenticado" };
+  if (!identity?.userId) return { ok: false, status: 401, error: "No autenticado" };
 
-  return { ok: true, userId: user.id, role: decision.role };
+  return { ok: true, userId: identity.userId, role: decision.role };
 }
 
 // El acceso admin valida solo el rol (contrato previo); userId queda opcional.
 export async function requireAdminApi(): Promise<AdminAccess> {
-  const session = await getServerSession(authOptions);
-  const user = session?.user as { id?: string; role?: Role } | undefined;
+  const identity = await resolveIdentity();
 
-  const decision = decideAccess(user?.role, CATALOGO_ALLOWED_ROLES);
+  const decision = decideAccess(identity?.role, CATALOGO_ALLOWED_ROLES);
   if (!decision.ok) return decision;
 
-  return { ok: true, userId: user?.id, role: decision.role };
+  return { ok: true, userId: identity?.userId, role: decision.role };
 }
 
 export async function requireComercioApi(): Promise<AuthenticatedAccess> {

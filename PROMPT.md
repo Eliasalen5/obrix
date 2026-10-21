@@ -108,14 +108,16 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
 10. [x] Catálogo sin duplicados: propuestas del comercio + revisión admin
         (tests 🔁 duplicados / transacción / aislamiento)
 11. [x] Migración a PostgreSQL + migraciones versionadas (dev y prod)
-12. [ ] API versionada y contrato estable + auth por token Bearer (base mobile)
+12. [x] API versionada y contrato estable + auth por token Bearer (base mobile)
+        (`/api/v1` canónica; `/api/*` alias legacy con `Deprecation`; login
+        `POST /api/v1/auth/token`; auth dual cookie/Bearer reutilizando NextAuth)
 13. [ ] App mobile (Expo) para CLIENTE: proyecto, cotización, pedidos
 14. [ ] Capacidades nativas mobile (push, geolocalización, cámara código de barras)
 15. [~] Hardening y escalabilidad: README [x], limpieza de residuos [x],
         `npm audit` [x], rate limit con store compartido [ ] PENDIENTE
 
 ## Estado de avance
-- **Fases 1–11 completadas y verificadas.** Fase 15 parcial (ver pendientes).
+- **Fases 1–12 completadas y verificadas.** Fase 15 parcial (ver pendientes).
 - Web: home (landing Obrix), login `/ingresar` con credenciales demo, shell con
   NavBar por rol, panel cliente (wizard asistente→cotizar→ranking→pedido + mis
   pedidos), panel comercio (ofertas + solicitudes + pedidos) y panel admin
@@ -126,7 +128,12 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
   cancelar → comercio ve y avanza estado), con Prisma stub en memoria.
 - Tests unitarios de clientes API: catálogo, oferta, asistente, cotización,
   pedidos y solicitudes.
-- **Verificación:** `npm test` 308/308 (33 archivos), `tsc --noEmit` 0 errores,
+- **API versionada (Fase 12):** handlers bajo `/api/v1/*` (canónica). `/api/*`
+  sigue funcionando como alias legacy vía `src/proxy.ts` (rewrite + headers
+  `Deprecation`/`Link`). Auth dual: cookie (web) o `Authorization: Bearer <jwt>`
+  (mobile) con el mismo JWT de NextAuth; se respeta la revocación (`token.invalid`).
+  Login mobile: `POST /api/v1/auth/token` (email+password → `{ token, expiresIn, user }`).
+- **Verificación:** `npm test` 322/322 (36 archivos), `tsc --noEmit` 0 errores,
   `next build` OK.
 - **Deploy:** web en Vercel sobre Prisma Postgres.
 

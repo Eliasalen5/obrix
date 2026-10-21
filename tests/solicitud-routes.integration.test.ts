@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { resolveIdentity } from "@/lib/auth/token";
 import { prisma } from "@/lib/prisma";
 import { ROLES, type Role } from "@/lib/auth/constants";
 
-import * as comercioSolicitudes from "@/app/api/comercio/solicitudes/route";
-import * as adminSolicitudes from "@/app/api/admin/solicitudes/route";
-import * as aprobar from "@/app/api/admin/solicitudes/[id]/aprobar/route";
-import * as rechazar from "@/app/api/admin/solicitudes/[id]/rechazar/route";
+import * as comercioSolicitudes from "@/app/api/v1/comercio/solicitudes/route";
+import * as adminSolicitudes from "@/app/api/v1/admin/solicitudes/route";
+import * as aprobar from "@/app/api/v1/admin/solicitudes/[id]/aprobar/route";
+import * as rechazar from "@/app/api/v1/admin/solicitudes/[id]/rechazar/route";
 
-vi.mock("next-auth", () => ({
-  getServerSession: vi.fn(),
+vi.mock("@/lib/auth/token", () => ({
+  resolveIdentity: vi.fn(),
 }));
 
 // tx comparte los mismos mocks que prisma para poder inspeccionar la transacción
@@ -58,7 +58,7 @@ type DbMock = {
   $transaction: Mock;
 };
 
-const sessionMock = getServerSession as unknown as Mock;
+const sessionMock = resolveIdentity as unknown as Mock;
 const db = prisma as unknown as DbMock;
 
 const PROPUESTA = {
@@ -90,22 +90,16 @@ const SOLICITUD = {
 };
 
 function withComercio() {
-  sessionMock.mockResolvedValue({
-    user: { id: "u1", role: ROLES.COMERCIO as Role },
-    expires: "",
-  });
+  sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
   db.comercio.findUnique.mockResolvedValue({ id: "com1" });
 }
 
 function withAdmin() {
-  sessionMock.mockResolvedValue({
-    user: { id: "adm1", role: ROLES.ADMIN as Role },
-    expires: "",
-  });
+  sessionMock.mockResolvedValue({ userId: "adm1", role: ROLES.ADMIN as Role });
 }
 
 function withRole(role: Role) {
-  sessionMock.mockResolvedValue({ user: { id: "u1", role }, expires: "" });
+  sessionMock.mockResolvedValue({ userId: "u1", role });
 }
 
 function noSession() {
@@ -194,8 +188,8 @@ describe("comercio — solicitudes de producto", () => {
 
   it("POST sin comercio asociado → 403", async () => {
     sessionMock.mockResolvedValue({
-      user: { id: "u1", role: ROLES.COMERCIO as Role },
-      expires: "",
+      userId: "u1",
+      role: ROLES.COMERCIO as Role,
     });
     db.comercio.findUnique.mockResolvedValue(null);
     const res = await comercioSolicitudes.POST(

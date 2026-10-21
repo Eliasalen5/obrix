@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { resolveIdentity } from "@/lib/auth/token";
 import { ROLES, type Role } from "@/lib/auth/constants";
 import { asistenteRateLimiter, resolveLimitPerMin } from "@/lib/rate-limit";
 import { AiProviderError } from "@/lib/ai/errors";
-import * as asistente from "@/app/api/asistente/route";
+import * as asistente from "@/app/api/v1/asistente/route";
 
 const mocks = vi.hoisted(() => ({
   getAiProvider: vi.fn(),
   timeoutMs: 2000,
 }));
 
-vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
+vi.mock("@/lib/auth/token", () => ({ resolveIdentity: vi.fn() }));
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
@@ -25,7 +25,7 @@ vi.mock("@/lib/ai", () => ({
   }),
 }));
 
-const sessionMock = getServerSession as unknown as Mock;
+const sessionMock = resolveIdentity as unknown as Mock;
 
 const RESULTADO = {
   titulo: "Parrilla de obra (simulado): quiero hacer una parrilla",
@@ -45,10 +45,7 @@ function proveedorDemo() {
 }
 
 function conSesionRol(role: Role) {
-  sessionMock.mockResolvedValue({
-    user: { id: "u1", role },
-    expires: "",
-  });
+  sessionMock.mockResolvedValue({ userId: "u1", role });
 }
 
 function sinSesion() {
@@ -177,7 +174,7 @@ describe("asistente — rate limiting", () => {
     for (let i = 0; i < limite; i++) await asistente.POST(req(body));
     expect((await asistente.POST(req(body))).status).toBe(429);
 
-    sessionMock.mockResolvedValue({ user: { id: "u2", role: ROLES.CLIENTE }, expires: "" });
+    sessionMock.mockResolvedValue({ userId: "u2", role: ROLES.CLIENTE });
     expect((await asistente.POST(req(body))).status).toBe(200);
   });
 });

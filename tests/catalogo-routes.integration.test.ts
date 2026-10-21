@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { resolveIdentity } from "@/lib/auth/token";
 import { prisma } from "@/lib/prisma";
 import { ROLES, type Role } from "@/lib/auth/constants";
 
-import * as categorias from "@/app/api/admin/catalogo/categorias/route";
-import * as categoriaById from "@/app/api/admin/catalogo/categorias/[id]/route";
-import * as productos from "@/app/api/admin/catalogo/productos/route";
-import * as productoById from "@/app/api/admin/catalogo/productos/[id]/route";
+import * as categorias from "@/app/api/v1/admin/catalogo/categorias/route";
+import * as categoriaById from "@/app/api/v1/admin/catalogo/categorias/[id]/route";
+import * as productos from "@/app/api/v1/admin/catalogo/productos/route";
+import * as productoById from "@/app/api/v1/admin/catalogo/productos/[id]/route";
 
-vi.mock("next-auth", () => ({
-  getServerSession: vi.fn(),
+vi.mock("@/lib/auth/token", () => ({
+  resolveIdentity: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -37,11 +37,11 @@ type DbMock = {
   producto: Record<"findMany" | "findUnique" | "create" | "update" | "delete", Mock>;
 };
 
-const sessionMock = getServerSession as unknown as Mock;
+const sessionMock = resolveIdentity as unknown as Mock;
 const db = prisma as unknown as DbMock;
 
 function withRole(role: Role) {
-  sessionMock.mockResolvedValue({ user: { role }, expires: "" });
+  sessionMock.mockResolvedValue({ userId: "u1", role });
 }
 
 function noSession() {

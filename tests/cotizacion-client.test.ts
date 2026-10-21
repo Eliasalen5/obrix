@@ -32,7 +32,7 @@ describe("cliente API cotizaciones (fetch)", () => {
     if (res.ok) expect(res.data.cotizacion.id).toBe("cot1");
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/cotizaciones");
+    expect(url).toBe("/api/v1/cotizaciones");
     expect(init.method).toBe("POST");
     expect(init.headers["content-type"]).toBe("application/json");
     expect(JSON.parse(init.body)).toEqual(INPUT);
@@ -47,7 +47,7 @@ describe("cliente API cotizaciones (fetch)", () => {
 
     expect(res).toEqual({ ok: true, data: [{ id: "cot1" }] });
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/cotizaciones",
+      "/api/v1/cotizaciones",
       expect.anything(),
     );
   });
@@ -62,7 +62,7 @@ describe("cliente API cotizaciones (fetch)", () => {
 
     await cotizacionApi.obtener("cot9");
 
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/cotizaciones/cot9");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/cotizaciones/cot9");
   });
 
   it("propaga error y details en respuesta no-ok", async () => {

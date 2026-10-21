@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { resolveIdentity } from "@/lib/auth/token";
 import { prisma } from "@/lib/prisma";
 import { ROLES, type Role } from "@/lib/auth/constants";
 
-import * as pedidos from "@/app/api/pedidos/route";
-import * as pedidoById from "@/app/api/pedidos/[id]/route";
+import * as pedidos from "@/app/api/v1/pedidos/route";
+import * as pedidoById from "@/app/api/v1/pedidos/[id]/route";
 
-vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
+vi.mock("@/lib/auth/token", () => ({ resolveIdentity: vi.fn() }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -35,7 +35,7 @@ type DbMock = {
   >;
 };
 
-const sessionMock = getServerSession as unknown as Mock;
+const sessionMock = resolveIdentity as unknown as Mock;
 const db = prisma as unknown as DbMock;
 
 const COTIZACION = {
@@ -79,17 +79,14 @@ const OFERTAS = [
 ];
 
 const CUERPO = { cotizacionId: "cot1", comercioId: "com1" };
-const BASE = "http://localhost/api/pedidos";
+const BASE = "http://localhost/api/v1/pedidos";
 
 function conCliente() {
-  sessionMock.mockResolvedValue({
-    user: { id: "u1", role: ROLES.CLIENTE as Role },
-    expires: "",
-  });
+  sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.CLIENTE as Role });
 }
 
 function conRol(role: Role) {
-  sessionMock.mockResolvedValue({ user: { id: "u1", role }, expires: "" });
+  sessionMock.mockResolvedValue({ userId: "u1", role });
 }
 
 function sinSesion() {

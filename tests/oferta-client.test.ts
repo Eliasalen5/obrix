@@ -31,7 +31,7 @@ describe("cliente API ofertas (fetch)", () => {
 
     expect(res).toEqual({ ok: true, data: [{ id: "prod1" }] });
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/comercio/catalogo",
+      "/api/v1/comercio/catalogo",
       expect.anything(),
     );
   });
@@ -43,7 +43,7 @@ describe("cliente API ofertas (fetch)", () => {
 
     await ofertaApi.listOfertas();
 
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/comercio/ofertas");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/comercio/ofertas");
   });
 
   it("upsertOferta hace POST con el body", async () => {
@@ -54,7 +54,7 @@ describe("cliente API ofertas (fetch)", () => {
     await ofertaApi.upsertOferta(INPUT);
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/comercio/ofertas");
+    expect(url).toBe("/api/v1/comercio/ofertas");
     expect(init.method).toBe("POST");
     expect(init.headers["content-type"]).toBe("application/json");
     expect(JSON.parse(init.body)).toEqual(INPUT);
@@ -68,7 +68,7 @@ describe("cliente API ofertas (fetch)", () => {
     await ofertaApi.updateOferta("of1", { precio: 120 });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/comercio/ofertas/of1");
+    expect(url).toBe("/api/v1/comercio/ofertas/of1");
     expect(init.method).toBe("PATCH");
     expect(JSON.parse(init.body)).toEqual({ precio: 120 });
   });
@@ -80,7 +80,7 @@ describe("cliente API ofertas (fetch)", () => {
 
     expect(res).toEqual({ ok: true, data: undefined });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/comercio/ofertas/of1");
+    expect(url).toBe("/api/v1/comercio/ofertas/of1");
     expect(init.method).toBe("DELETE");
   });
 

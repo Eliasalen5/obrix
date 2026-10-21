@@ -32,8 +32,8 @@ export type SolicitudCreada = {
   posiblesDuplicados: Producto[];
 };
 
-const COMERCIO_BASE = "/api/comercio/solicitudes";
-const ADMIN_BASE = "/api/admin/solicitudes";
+const COMERCIO_BASE = "/api/v1/comercio/solicitudes";
+const ADMIN_BASE = "/api/v1/admin/solicitudes";
 
 export const solicitudComercioApi = {
   listSolicitudes: (estado?: EstadoSolicitud) => {

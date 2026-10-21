@@ -37,14 +37,14 @@ describe("cliente API solicitudes — comercio", () => {
   it("listSolicitudes sin estado → GET sin querystring", async () => {
     ok([]);
     await solicitudComercioApi.listSolicitudes();
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/comercio/solicitudes");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/comercio/solicitudes");
   });
 
   it("listSolicitudes con estado → añade querystring", async () => {
     ok([]);
     await solicitudComercioApi.listSolicitudes("PENDIENTE_REVISION");
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "/api/comercio/solicitudes?estado=PENDIENTE_REVISION",
+      "/api/v1/comercio/solicitudes?estado=PENDIENTE_REVISION",
     );
   });
 
@@ -54,7 +54,7 @@ describe("cliente API solicitudes — comercio", () => {
     const res = await solicitudComercioApi.crearSolicitud(PROPUESTA);
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/comercio/solicitudes");
+    expect(url).toBe("/api/v1/comercio/solicitudes");
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body)).toEqual({ propuesta: PROPUESTA });
     expect(res.ok).toBe(true);
@@ -85,7 +85,7 @@ describe("cliente API solicitudes — admin", () => {
     ok([]);
     await solicitudAdminApi.listSolicitudes("PENDIENTE_REVISION");
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "/api/admin/solicitudes?estado=PENDIENTE_REVISION",
+      "/api/v1/admin/solicitudes?estado=PENDIENTE_REVISION",
     );
   });
 
@@ -95,7 +95,7 @@ describe("cliente API solicitudes — admin", () => {
     await solicitudAdminApi.aprobar("s1", { modo: "nuevo" });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/admin/solicitudes/s1/aprobar");
+    expect(url).toBe("/api/v1/admin/solicitudes/s1/aprobar");
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body)).toEqual({ modo: "nuevo" });
   });
@@ -116,7 +116,7 @@ describe("cliente API solicitudes — admin", () => {
     await solicitudAdminApi.rechazar("s1", "Duplicado");
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/admin/solicitudes/s1/rechazar");
+    expect(url).toBe("/api/v1/admin/solicitudes/s1/rechazar");
     expect(JSON.parse(init.body)).toEqual({ motivo: "Duplicado" });
   });
 

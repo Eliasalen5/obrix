@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { resolveIdentity } from "@/lib/auth/token";
 import { prisma } from "@/lib/prisma";
 import { ROLES, type Role } from "@/lib/auth/constants";
 
-import * as pedidos from "@/app/api/comercio/pedidos/route";
-import * as pedidoById from "@/app/api/comercio/pedidos/[id]/route";
+import * as pedidos from "@/app/api/v1/comercio/pedidos/route";
+import * as pedidoById from "@/app/api/v1/comercio/pedidos/[id]/route";
 
-vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
+vi.mock("@/lib/auth/token", () => ({ resolveIdentity: vi.fn() }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -30,21 +30,18 @@ type DbMock = {
   >;
 };
 
-const sessionMock = getServerSession as unknown as Mock;
+const sessionMock = resolveIdentity as unknown as Mock;
 const db = prisma as unknown as DbMock;
 
-const BASE = "http://localhost/api/comercio/pedidos";
+const BASE = "http://localhost/api/v1/comercio/pedidos";
 
 function conComercio() {
-  sessionMock.mockResolvedValue({
-    user: { id: "u1", role: ROLES.COMERCIO as Role },
-    expires: "",
-  });
+  sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
   db.comercio.findUnique.mockResolvedValue({ id: "com1" });
 }
 
 function conRol(role: Role) {
-  sessionMock.mockResolvedValue({ user: { id: "u1", role }, expires: "" });
+  sessionMock.mockResolvedValue({ userId: "u1", role });
 }
 
 function sinSesion() {
@@ -88,8 +85,8 @@ describe("comercio — pedidos: autorización", () => {
 
   it("COMERCIO sin comercio asociado → 403", async () => {
     sessionMock.mockResolvedValue({
-      user: { id: "u1", role: ROLES.COMERCIO as Role },
-      expires: "",
+      userId: "u1",
+      role: ROLES.COMERCIO as Role,
     });
     db.comercio.findUnique.mockResolvedValue(null);
     const res = await pedidos.GET();
