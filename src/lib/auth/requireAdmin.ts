@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./options";
-import { ROLES, type Role } from "./constants";
+import { ROLES } from "./constants";
+import { sessionRole } from "./sessionUser";
 
 export async function requireAdminSession() {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role as Role | undefined;
+  const role = sessionRole(session);
   if (!session || role !== ROLES.ADMIN) {
     redirect("/ingresar");
   }

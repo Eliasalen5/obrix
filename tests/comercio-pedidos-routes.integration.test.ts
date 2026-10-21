@@ -12,13 +12,22 @@ vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     comercio: { findUnique: vi.fn() },
-    pedido: { findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    pedido: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
   },
 }));
 
 type DbMock = {
   comercio: Record<"findUnique", Mock>;
-  pedido: Record<"findMany" | "findFirst" | "update", Mock>;
+  pedido: Record<
+    "findMany" | "findFirst" | "findUniqueOrThrow" | "update" | "updateMany",
+    Mock
+  >;
 };
 
 const sessionMock = getServerSession as unknown as Mock;
@@ -118,18 +127,30 @@ describe("comercio — pedidos: cambio de estado", () => {
   it("PENDIENTE → CONFIRMADO → 200", async () => {
     conComercio();
     db.pedido.findFirst.mockResolvedValue({ id: "ped1", estado: "PENDIENTE" });
-    db.pedido.update.mockResolvedValue({ id: "ped1", estado: "CONFIRMADO" });
+    db.pedido.updateMany.mockResolvedValue({ count: 1 });
+    db.pedido.findUniqueOrThrow.mockResolvedValue({ id: "ped1", estado: "CONFIRMADO" });
     const res = await pedidoById.PATCH(
       jsonReq(BASE, "PATCH", { estado: "CONFIRMADO" }),
       ctx("ped1"),
     );
     expect(res.status).toBe(200);
-    expect(db.pedido.update).toHaveBeenCalledWith(
+    expect(db.pedido.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "ped1" },
+        where: expect.objectContaining({ id: "ped1", estado: "PENDIENTE" }),
         data: { estado: "CONFIRMADO" },
       }),
     );
+  });
+
+  it("cambio de estado con carrera (0 filas) → 409", async () => {
+    conComercio();
+    db.pedido.findFirst.mockResolvedValue({ id: "ped1", estado: "PENDIENTE" });
+    db.pedido.updateMany.mockResolvedValue({ count: 0 });
+    const res = await pedidoById.PATCH(
+      jsonReq(BASE, "PATCH", { estado: "CONFIRMADO" }),
+      ctx("ped1"),
+    );
+    expect(res.status).toBe(409);
   });
 
   it("saltear estados (PENDIENTE → ENTREGADO) → 409", async () => {
@@ -140,7 +161,7 @@ describe("comercio — pedidos: cambio de estado", () => {
       ctx("ped1"),
     );
     expect(res.status).toBe(409);
-    expect(db.pedido.update).not.toHaveBeenCalled();
+    expect(db.pedido.updateMany).not.toHaveBeenCalled();
   });
 
   it("ENTREGADO es final → 409", async () => {

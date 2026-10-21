@@ -5,7 +5,6 @@ import { ROLES, type Role } from "@/lib/auth/constants";
 
 import * as asistenteRoute from "@/app/api/asistente/route";
 import * as cotizacionesRoute from "@/app/api/cotizaciones/route";
-import * as cotizacionByIdRoute from "@/app/api/cotizaciones/[id]/route";
 import * as pedidosRoute from "@/app/api/pedidos/route";
 import * as pedidoByIdRoute from "@/app/api/pedidos/[id]/route";
 import * as comercioPedidosRoute from "@/app/api/comercio/pedidos/route";
@@ -196,7 +195,7 @@ vi.mock("@/lib/prisma", () => ({
       }),
     },
     cotizacion: {
-      create: vi.fn(async ({ data, include }: any) => {
+      create: vi.fn(async ({ data }: any) => {
         const cotizacionId = createId();
         const materiales: MaterialRow[] = (data.materiales?.create || []).map(
           (m: any) => ({
@@ -375,6 +374,45 @@ vi.mock("@/lib/prisma", () => ({
         }
         return ped;
       }),
+      updateMany: vi.fn(async ({ where, data }: any) => {
+        const w = where || {};
+        let count = 0;
+        for (const ped of store.pedidos) {
+          let ok = true;
+          if (w.id && ped.id !== w.id) ok = false;
+          if (w.clienteId && ped.clienteId !== w.clienteId) ok = false;
+          if (w.comercioId && ped.comercioId !== w.comercioId) ok = false;
+          if (w.estado && ped.estado !== w.estado) ok = false;
+          if (ok) {
+            if (data.estado !== undefined) ped.estado = data.estado;
+            count += 1;
+          }
+        }
+        return { count };
+      }),
+      findUniqueOrThrow: vi.fn(async ({ where, include }: any) => {
+        const ped = store.pedidos.find((p) => p.id === where.id);
+        if (!ped) throw new Error("P2025");
+        if (include?.comercio || include?.items?.include?.producto) {
+          const c = store.comercios.find((cc) => cc.id === ped.comercioId);
+          return {
+            ...ped,
+            comercio: c
+              ? { id: c.id, nombre: c.nombre, direccion: c.direccion, telefono: c.telefono }
+              : null,
+            items: ped.items.map((it) => {
+              const p = store.productos.find((pp) => pp.id === it.productoId);
+              return {
+                ...it,
+                producto: p
+                  ? { id: p.id, sku: p.sku, nombre: p.nombre, unidad: p.unidad }
+                  : null,
+              };
+            }),
+          };
+        }
+        return { ...ped };
+      }),
     },
   },
 }));
@@ -467,9 +505,6 @@ function sessionCliente() {
 }
 function sessionComercio() {
   sessionMock.mockResolvedValue({ user: { id: "u2", role: ROLES.COMERCIO as Role }, expires: "" });
-}
-function sessionAdmin() {
-  sessionMock.mockResolvedValue({ user: { id: "u3", role: ROLES.ADMIN as Role }, expires: "" });
 }
 
 describe("E2E camino feliz (API)", () => {

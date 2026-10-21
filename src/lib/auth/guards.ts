@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./options";
-import type { Role } from "./constants";
 import { ROLES } from "./constants";
+import { sessionRole } from "./sessionUser";
 
 export async function requireAdmin() {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role as Role | undefined;
+  const role = sessionRole(session);
   if (!session || role !== ROLES.ADMIN) {
     redirect("/api/auth/signin");
   }
@@ -15,7 +15,7 @@ export async function requireAdmin() {
 
 export async function requireComercio() {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role as Role | undefined;
+  const role = sessionRole(session);
   if (!session || role !== ROLES.COMERCIO) {
     redirect("/api/auth/signin");
   }

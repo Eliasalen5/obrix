@@ -21,6 +21,7 @@ model Usuario {
   comercio     Comercio?
   cotizaciones Cotizacion[]
   pedidos      Pedido[]
+  solicitudesRevisadas SolicitudProducto[]
 }
 
 model Categoria {
@@ -36,12 +37,43 @@ model Producto {
   nombre      String
   unidad      String // "bolsa 50 kg", "unidad", "m", "litro", "m²", ...
   descripcion String            @default("")
+  // Identificación canónica para detección de duplicados (catálogo maestro)
+  codigoBarras    String?   @unique // identificador confiable cuando existe
+  fabricante      String    @default("")
+  codigoFabricante String?
+  marca           String    @default("") // marca canónica del producto maestro
+  atributos       Json?     // medidas, peso, dimensiones, etc. (variables)
   categoriaId String
   categoria   Categoria         @relation(fields: [categoriaId], references: [id])
   ofertas     Oferta[]
   itemsPedido ItemPedido[]
   materiales  MaterialCotizacion[]
+  solicitudes SolicitudProducto[]
   createdAt   DateTime          @default(now())
+}
+
+// Propuesta de un comercio para incorporar un producto al catálogo maestro.
+// El producto propuesto NO se publica hasta que un ADMIN apruebe.
+model SolicitudProducto {
+  id             String    @id @default(cuid())
+  comercioId     String
+  comercio       Comercio  @relation(fields: [comercioId], references: [id])
+  estado         String    @default("PENDIENTE_REVISION") // PENDIENTE_REVISION | APROBADA | VINCULADA | RECHAZADA
+  datos          Json // propuesta canónica (nombre, categoría, marca, códigos, atributos, precio/stock iniciales)
+  clavePendiente String? // clave normalizada de la propuesta; se limpia al resolver
+  productoId     String? // producto maestro resultante (al aprobar o vincular)
+  producto       Producto? @relation(fields: [productoId], references: [id])
+  motivoRechazo  String    @default("")
+  revisadoById   String?
+  revisadoBy     Usuario?  @relation(fields: [revisadoById], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Anti doble envío: un solo envío pendiente idéntico por comercio.
+  // En Postgres los NULL no chocan, así que las solicitudes resueltas no bloquean.
+  @@unique([comercioId, clavePendiente])
+  @@index([estado])
+  @@index([comercioId, estado])
 }
 
 model Comercio {
@@ -56,6 +88,7 @@ model Comercio {
   owner     Usuario   @relation(fields: [ownerId], references: [id])
   ofertas   Oferta[]
   pedidos   Pedido[]
+  solicitudes SolicitudProducto[]
   createdAt DateTime  @default(now())
 }
 

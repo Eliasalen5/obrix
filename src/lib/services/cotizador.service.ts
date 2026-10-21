@@ -309,7 +309,8 @@ export function compararOfertas(
         .filter((material) => !acumulador.cubiertos.has(material.materialId))
         .map((material) => ({ materialId: material.materialId, nombre: material.nombre }));
       const cubreTodo = faltantes.length === 0;
-      const { cubiertos: _cubiertos, ...resto } = acumulador;
+      const { cubiertos, ...resto } = acumulador;
+      void cubiertos;
       return {
         ...resto,
         itemsTotales,

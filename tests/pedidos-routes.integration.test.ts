@@ -18,7 +18,9 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
   },
 }));
@@ -27,7 +29,10 @@ type DbMock = {
   cotizacion: Record<"findFirst", Mock>;
   comercio: Record<"findFirst", Mock>;
   oferta: Record<"findMany", Mock>;
-  pedido: Record<"create" | "findMany" | "findFirst" | "update", Mock>;
+  pedido: Record<
+    "create" | "findMany" | "findFirst" | "findUniqueOrThrow" | "update" | "updateMany",
+    Mock
+  >;
 };
 
 const sessionMock = getServerSession as unknown as Mock;
@@ -261,15 +266,30 @@ describe("pedidos (cliente) — cancelación", () => {
   it("PATCH cancelar un PENDIENTE → 200", async () => {
     conCliente();
     db.pedido.findFirst.mockResolvedValue({ id: "ped1", estado: "PENDIENTE" });
-    db.pedido.update.mockResolvedValue({ id: "ped1", estado: "CANCELADO" });
+    db.pedido.updateMany.mockResolvedValue({ count: 1 });
+    db.pedido.findUniqueOrThrow.mockResolvedValue({ id: "ped1", estado: "CANCELADO" });
     const res = await pedidoById.PATCH(
       jsonReq(BASE, "PATCH", { estado: "CANCELADO" }),
       ctx("ped1"),
     );
     expect(res.status).toBe(200);
-    expect(db.pedido.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "ped1" }, data: { estado: "CANCELADO" } }),
+    expect(db.pedido.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: "ped1", estado: "PENDIENTE" }),
+        data: { estado: "CANCELADO" },
+      }),
     );
+  });
+
+  it("PATCH cancelar con carrera (0 filas) → 409", async () => {
+    conCliente();
+    db.pedido.findFirst.mockResolvedValue({ id: "ped1", estado: "PENDIENTE" });
+    db.pedido.updateMany.mockResolvedValue({ count: 0 });
+    const res = await pedidoById.PATCH(
+      jsonReq(BASE, "PATCH", { estado: "CANCELADO" }),
+      ctx("ped1"),
+    );
+    expect(res.status).toBe(409);
   });
 
   it("PATCH cancelar un CONFIRMADO → 409", async () => {
@@ -280,7 +300,7 @@ describe("pedidos (cliente) — cancelación", () => {
       ctx("ped1"),
     );
     expect(res.status).toBe(409);
-    expect(db.pedido.update).not.toHaveBeenCalled();
+    expect(db.pedido.updateMany).not.toHaveBeenCalled();
   });
 
   it("PATCH intentar otro estado → 400 (solo cancela)", async () => {

@@ -101,7 +101,6 @@ function ctx(id: string) {
   return { params: Promise.resolve({ id }) };
 }
 
-const CAT_BASE = "http://localhost/api/comercio/catalogo";
 const OF_BASE = "http://localhost/api/comercio/ofertas";
 
 beforeEach(() => {
@@ -146,7 +145,7 @@ describe("comercio — catálogo maestro (solo lectura)", () => {
   it("GET catálogo con COMERCIO → 200 con productos", async () => {
     withComercio();
     db.producto.findMany.mockResolvedValue([PRODUCTO]);
-    const res = await catalogo.GET();
+    const res = await catalogo.GET(req("http://localhost/api/comercio/catalogo"));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ data: [PRODUCTO] });
   });

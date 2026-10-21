@@ -23,7 +23,13 @@ export type Oferta = {
 const BASE = "/api/comercio";
 
 export const ofertaApi = {
-  listCatalogo: () => request<Producto[]>(`${BASE}/catalogo`),
+  listCatalogo: (opts?: { q?: string; categoriaId?: string }) => {
+    const params = new URLSearchParams();
+    if (opts?.q) params.set("q", opts.q);
+    if (opts?.categoriaId) params.set("categoriaId", opts.categoriaId);
+    const qs = params.toString();
+    return request<Producto[]>(`${BASE}/catalogo${qs ? `?${qs}` : ""}`);
+  },
   listOfertas: () => request<Oferta[]>(`${BASE}/ofertas`),
   upsertOferta: (data: CreateOfertaInput) =>
     request<Oferta>(`${BASE}/ofertas`, {

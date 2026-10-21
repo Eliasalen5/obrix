@@ -22,6 +22,10 @@ export type Producto = {
   descripcion: string;
   categoriaId: string;
   categoria?: Categoria;
+  codigoBarras?: string | null;
+  fabricante?: string;
+  codigoFabricante?: string | null;
+  marca?: string;
 };
 
 const BASE = "/api/admin/catalogo";

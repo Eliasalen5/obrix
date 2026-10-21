@@ -21,6 +21,7 @@ const ENLACES: Record<Role, Enlace[]> = {
   [ROLES.ADMIN]: [
     { href: "/dashboard", label: "Panel" },
     { href: "/catalogo", label: "Catálogo" },
+    { href: "/solicitudes", label: "Solicitudes" },
   ],
 };
 
