@@ -21,7 +21,7 @@ const PASOS = [
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12">
-      <section className="max-w-2xl">
+      <section className="mx-auto max-w-2xl text-center">
         <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">
           Sumá tu negocio a Obrix
         </p>
@@ -33,7 +33,8 @@ export default function Home() {
         <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
           Describí tu proyecto, el asistente calcula los materiales, comparamos
           los comercios cercanos y armás el pedido en un rato.
-        </p>        <div className="mt-8 flex flex-wrap gap-3">
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             href="/ingresar"
             className="rounded-full bg-zinc-900 px-5 py-2.5 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
@@ -53,7 +54,7 @@ export default function Home() {
         {PASOS.map((paso) => (
           <div
             key={paso.titulo}
-            className="rounded-xl border border-zinc-200 p-5 dark:border-zinc-800"
+            className="rounded-xl border border-zinc-200 p-5 text-center dark:border-zinc-800"
           >
             <h2 className="font-medium">{paso.titulo}</h2>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -64,7 +65,7 @@ export default function Home() {
       </section>
 
       <section className="mt-16 rounded-2xl border border-zinc-200 bg-zinc-50 p-8 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="max-w-2xl">
+        <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-semibold tracking-tight">
             Sumá tu negocio y empezá a recibir pedidos
           </h2>
