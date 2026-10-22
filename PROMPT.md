@@ -111,13 +111,17 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
 12. [x] API versionada y contrato estable + auth por token Bearer (base mobile)
         (`/api/v1` canónica; `/api/*` alias legacy con `Deprecation`; login
         `POST /api/v1/auth/token`; auth dual cookie/Bearer reutilizando NextAuth)
-13. [ ] App mobile (Expo) para CLIENTE: proyecto, cotización, pedidos
+13. [~] App mobile (Expo) para CLIENTE — MVP: login, asistente y cotización.
+        Proyecto en `mobile/` (Expo SDK 58 + expo-router), reutiliza validadores y
+        clientes de `src/lib` vía alias `@shared`; token en `expo-secure-store`.
+        Probado en vivo en iPhone (Expo Go): login → asistente (demo) → cotización.
+        Falta: pedidos y paridad completa con la web.
 14. [ ] Capacidades nativas mobile (push, geolocalización, cámara código de barras)
 15. [~] Hardening y escalabilidad: README [x], limpieza de residuos [x],
         `npm audit` [x], rate limit con store compartido [ ] PENDIENTE
 
 ## Estado de avance
-- **Fases 1–12 completadas y verificadas.** Fase 15 parcial (ver pendientes).
+- **Fases 1–12 completadas y verificadas.** Fase 13 (mobile) en MVP; Fase 15 parcial.
 - Web: home (landing Obrix), login `/ingresar` con credenciales demo, shell con
   NavBar por rol, panel cliente (wizard asistente→cotizar→ranking→pedido + mis
   pedidos), panel comercio (ofertas + solicitudes + pedidos) y panel admin
@@ -133,18 +137,31 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
   `Deprecation`/`Link`). Auth dual: cookie (web) o `Authorization: Bearer <jwt>`
   (mobile) con el mismo JWT de NextAuth; se respeta la revocación (`token.invalid`).
   Login mobile: `POST /api/v1/auth/token` (email+password → `{ token, expiresIn, user }`).
-- **Verificación:** `npm test` 322/322 (36 archivos), `tsc --noEmit` 0 errores,
+- **App mobile (Fase 13, MVP):** proyecto `mobile/` (Expo SDK 58 + expo-router,
+  TypeScript). Reutiliza validadores y clientes de `src/lib` vía alias `@shared`
+  (un solo source of truth). Transporte HTTP configurable: la web usa rutas
+  relativas (`configureHttp` sin usar); mobile configura URL absoluta + Bearer.
+  Sesión en `expo-secure-store`. Pantallas: login, asistente (proyecto → materiales)
+  y cotización (materiales → ranking de ferreterías). Falta: pedidos.
+  **Probado en vivo en iPhone (Expo Go, SDK 58):** login CLIENTE → asistente
+  (proveedor demo) → cotización. En **iOS** Expo Go exige cuenta de Expo y que la
+  **CLI use la misma cuenta** (`EXPO_TOKEN` evita el login por navegador, que falla
+  en este Windows). Íconos/splash propios en `mobile/assets/` (logo Obrix).
+- **Verificación:** `npm test` 328/328 (37 archivos), `tsc --noEmit` 0 errores,
   `next build` OK.
 - **Deploy:** web en Vercel sobre Prisma Postgres.
 
 ## PENDIENTES (recordatorio)
+- **[Fase 13] Mobile — completar:** pantalla de pedidos y paridad con el flujo web;
+  definir `EXPO_PUBLIC_API_URL` por entorno (dev LAN / prod Vercel).
+  Notas de entorno: en iOS, Expo Go exige sesión y coincidir con la CLI; usar
+  `EXPO_TOKEN` para autenticar la CLI sin navegador. Íconos en `mobile/assets/`.
 - **[Fase 15] Rate limit con store compartido.** Hoy el conteo vive en memoria
   (`MemoryRateLimitStore`), por instancia de proceso. En Vercel (serverless, multi
   instancia) el límite real es "por instancia", no global. FALTA: implementar el
   store compartido (Redis/Upstash, plan gratis cubre de sobra) detrás de la
   interfaz `RateLimitStore` ya existente. Sin tráfico real hoy, no es urgente.
-- **[Fases 12–14] Roadmap mobile:** API versionada + auth Bearer, app Expo,
-  capacidades nativas.
+- **[Fase 14] Capacidades nativas mobile:** push, geolocalización, cámara de barras.
 - `npm audit`: 5 vulnerabilidades high, todas de `eslint-config-next` (tooling de
   lint, NO runtime). Solo se arreglan con `--force` (breaking: baja a v14) → no
   aplicar. Sin acción hasta que el upstream lo resuelva.

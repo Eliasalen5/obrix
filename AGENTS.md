@@ -22,6 +22,8 @@ manda `PROMPT.md`.
 - Dev: `npm run dev`.
 - DB: `npm run db:deploy` (`prisma migrate deploy`) y `npm run db:seed`.
 - Regenerar cliente Prisma: `npx prisma generate` (salida en `src/generated/prisma`).
+- Mobile (en `mobile/`): `npm install` (una vez), `npm start` (Expo), y su propio
+  `npm run typecheck`. No usa el `tsconfig` ni el `node_modules` de la raíz.
 
 Checklist antes de cerrar una fase: `npm test` verde + `npx tsc --noEmit` sin
 errores + `npm run build` OK.
@@ -71,14 +73,22 @@ errores + `npm run build` OK.
   validación Zod (400), y flujos de negocio (transacción/rollback).
 
 ## Mobile (roadmap — ver `PROMPT.md`)
-- Objetivo: React Native + Expo reutilizando validadores y clientes API.
-- **Contrato estable ya disponible (Fase 12):** handlers canónicos en `/api/v1/*`.
-  `/api/*` sigue vivo como alias legacy (rewrite + `Deprecation`/`Link`) vía
-  `src/proxy.ts`; no agregar rutas nuevas ahí, siempre en `/api/v1`.
-- **Auth:** acepta cookie (web) o `Authorization: Bearer <jwt>` (mobile). El JWT
-  es el mismo de NextAuth (`src/lib/auth/token.ts` resuelve la identidad y respeta
-  la revocación `token.invalid`). Login mobile: `POST /api/v1/auth/token`
-  (`{email,password}` → `{data:{token,expiresIn,user}}`); reutiliza
-  `verifyCredentials` (Zod + rate limit + bcrypt), sin lógica duplicada.
+- **Proyecto en `mobile/`** (Expo SDK 58 + expo-router). Reutiliza código de la web
+  vía alias `@shared/*` → `src/lib/*` (definido en `mobile/metro.config.js` y
+  `mobile/tsconfig.json`). El alias web `@/lib/*` se reescribe a `@shared/*` en
+  Metro. NO copiar validadores/clientes dentro de `mobile`.
+- **Transporte HTTP configurable:** `src/lib/api/httpClient.ts` expone
+  `configureHttp({baseUrl, headers})` / `resetHttp()`. La web no lo usa (rutas
+  relativas); mobile llama `configureApi` en `mobile/src/auth/session.ts` para
+  apuntar a la URL absoluta y adjuntar el Bearer. `request()` sigue igual para web.
+- **Auth/token:** sesión en `expo-secure-store`; login reutiliza
+  `POST /api/v1/auth/token` (`authApi.login` en `src/lib/api/authClient.ts`).
+- **Arranque en vivo (iOS/Expo Go):** Expo Go exige cuenta de Expo y que la CLI use
+  la MISMA cuenta. En este Windows el login por navegador de la CLI falla
+  (`cmd /c start` code 1) → autenticar con `EXPO_TOKEN` (`$env:EXPO_TOKEN=...`).
+  Íconos/splash en `mobile/assets/` (logo Obrix) referenciados en `app.json` vía el
+  plugin `expo-splash-screen`. `EXPO_PUBLIC_API_URL` en `mobile/.env` apunta a la IP
+  LAN de la PC (misma Wi-Fi que el celular). Correr `npm install
+  --legacy-peer-deps` (peer de `react-dom` con expo-router).
 - Al extender la API para mobile, no romper a la web: cambios compatibles o
   versionados (`/api/v2`). El token va en almacenamiento seguro del dispositivo.

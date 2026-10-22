@@ -4,19 +4,56 @@ export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string; details?: ApiErrorDetail[] };
 
+export type HttpConfig = {
+  /** Prefijo para rutas relativas. Web: "" (mismo origen). Mobile: URL absoluta del API. */
+  baseUrl: string;
+  /** Headers por defecto en cada request (p. ej. `Authorization: Bearer`). */
+  headers: Record<string, string>;
+};
+
+let httpConfig: HttpConfig = { baseUrl: "", headers: {} };
+
+/**
+ * Configura el transporte HTTP global. La web no la usa (deja baseUrl="" y usa
+ * rutas relativas al mismo origen); la app mobile la usa al arrancar para apuntar
+ * a la URL absoluta del API y adjuntar el token Bearer.
+ */
+export function configureHttp(config: Partial<HttpConfig>): void {
+  httpConfig = {
+    baseUrl: config.baseUrl ?? httpConfig.baseUrl,
+    headers: config.headers ?? httpConfig.headers,
+  };
+}
+
+/** Restaura el transporte por defecto (rutas relativas, sin headers). Para tests. */
+export function resetHttp(): void {
+  httpConfig = { baseUrl: "", headers: {} };
+}
+
+function resolveUrl(url: string): string {
+  if (!httpConfig.baseUrl) return url;
+  if (/^https?:\/\//.test(url)) return url;
+  return `${httpConfig.baseUrl.replace(/\/$/, "")}${url}`;
+}
+
 export async function request<T>(
   url: string,
   init: RequestInit = {},
 ): Promise<ApiResult<T>> {
   const hasBody = init.body !== undefined && init.body !== null;
 
+  const mergedHeaders: Record<string, string> = {
+    ...httpConfig.headers,
+    ...((init.headers as Record<string, string> | undefined) ?? {}),
+  };
+  if (hasBody) mergedHeaders["content-type"] = "application/json";
+  const hasHeaders = Object.keys(mergedHeaders).length > 0;
+
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetch(resolveUrl(url), {
       ...init,
-      headers: hasBody
-        ? { "content-type": "application/json", ...(init.headers ?? {}) }
-        : init.headers,
+      headers: hasHeaders ? mergedHeaders : undefined,
     });
   } catch {
     return {
