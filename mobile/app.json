@@ -16,6 +16,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Obrix usa tu ubicación para ordenar las ferreterías por cercanía."
+        }
       ]
     ],
     "ios": {

@@ -111,12 +111,13 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
 12. [x] API versionada y contrato estable + auth por token Bearer (base mobile)
         (`/api/v1` canónica; `/api/*` alias legacy con `Deprecation`; login
         `POST /api/v1/auth/token`; auth dual cookie/Bearer reutilizando NextAuth)
-13. [~] App mobile (Expo) para CLIENTE — MVP: login, asistente y cotización.
+13. [x] App mobile (Expo) para CLIENTE — login, asistente, cotización y pedidos.
         Proyecto en `mobile/` (Expo SDK 58 + expo-router), reutiliza validadores y
         clientes de `src/lib` vía alias `@shared`; token en `expo-secure-store`.
-        Probado en vivo en iPhone (Expo Go): login → asistente (demo) → cotización.
-        Falta: pedidos y paridad completa con la web.
-14. [ ] Capacidades nativas mobile (push, geolocalización, cámara código de barras)
+        Probado en vivo en iPhone (Expo Go): login → asistente (demo) → cotización
+        → crear pedido → mis pedidos (cancelar).
+14. [~] Capacidades nativas mobile (geolocalización [x], cámara código de barras [ ],
+        push [ ] diferido: requiere development build; Expo Go iOS no soporta push).
 15. [~] Hardening y escalabilidad: README [x], limpieza de residuos [x],
         `npm audit` [x], rate limit con store compartido [ ] PENDIENTE
 
@@ -141,27 +142,33 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
   TypeScript). Reutiliza validadores y clientes de `src/lib` vía alias `@shared`
   (un solo source of truth). Transporte HTTP configurable: la web usa rutas
   relativas (`configureHttp` sin usar); mobile configura URL absoluta + Bearer.
-  Sesión en `expo-secure-store`. Pantallas: login, asistente (proyecto → materiales)
-  y cotización (materiales → ranking de ferreterías). Falta: pedidos.
+  Sesión en `expo-secure-store`. Pantallas: login, asistente (proyecto → materiales),
+  cotización (materiales → ranking de ferreterías → crear pedido) y pedidos
+  (listar/cancelar). **Geolocalización (Fase 14):** `expo-location`; el asistente
+  pide permiso y pasa `ubicacion` a la cotización (mismo contrato que la web).
   **Probado en vivo en iPhone (Expo Go, SDK 58):** login CLIENTE → asistente
-  (proveedor demo) → cotización. En **iOS** Expo Go exige cuenta de Expo y que la
-  **CLI use la misma cuenta** (`EXPO_TOKEN` evita el login por navegador, que falla
-  en este Windows). Íconos/splash propios en `mobile/assets/` (logo Obrix).
+  (proveedor demo) → cotización → pedido → mis pedidos. En **iOS** Expo Go exige
+  cuenta de Expo y que la **CLI use la misma cuenta** (`EXPO_TOKEN` evita el login
+  por navegador, que falla en este Windows). Íconos/splash propios en
+  `mobile/assets/` (logo Obrix).
 - **Verificación:** `npm test` 328/328 (37 archivos), `tsc --noEmit` 0 errores,
   `next build` OK.
 - **Deploy:** web en Vercel sobre Prisma Postgres.
 
 ## PENDIENTES (recordatorio)
-- **[Fase 13] Mobile — completar:** pantalla de pedidos y paridad con el flujo web;
-  definir `EXPO_PUBLIC_API_URL` por entorno (dev LAN / prod Vercel).
-  Notas de entorno: en iOS, Expo Go exige sesión y coincidir con la CLI; usar
-  `EXPO_TOKEN` para autenticar la CLI sin navegador. Íconos en `mobile/assets/`.
+- **[Fase 13] Mobile — completar paridad:** definir `EXPO_PUBLIC_API_URL` por
+  entorno (dev LAN / prod Vercel). Notas de entorno: en iOS, Expo Go exige sesión
+  y coincidir con la CLI; usar `EXPO_TOKEN` para autenticar la CLI sin navegador.
+  Íconos en `mobile/assets/`.
 - **[Fase 15] Rate limit con store compartido.** Hoy el conteo vive en memoria
   (`MemoryRateLimitStore`), por instancia de proceso. En Vercel (serverless, multi
   instancia) el límite real es "por instancia", no global. FALTA: implementar el
   store compartido (Redis/Upstash, plan gratis cubre de sobra) detrás de la
   interfaz `RateLimitStore` ya existente. Sin tráfico real hoy, no es urgente.
-- **[Fase 14] Capacidades nativas mobile:** push, geolocalización, cámara de barras.
+- **[Fase 14] Capacidades nativas mobile:** cámara/código de barras (requiere endpoint
+  CLIENTE de búsqueda por `codigoBarras`) y push (requiere development build: Expo Go
+  iOS no soporta push remoto; además modelo de tokens + endpoint). Geolocalización ya
+  hecha con `expo-location`.
 - `npm audit`: 5 vulnerabilidades high, todas de `eslint-config-next` (tooling de
   lint, NO runtime). Solo se arreglan con `--force` (breaking: baja a v14) → no
   aplicar. Sin acción hasta que el upstream lo resuelva.

@@ -5,13 +5,16 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { cotizacionApi } from "@shared/api/cotizacionClient";
+import { pedidoApi } from "@shared/api/pedidoClient";
 import type {
   CotizacionResponse,
   MaterialInput,
+  Ubicacion,
 } from "@shared/validators/cotizacion";
 import { colors, radius } from "@/theme";
 
@@ -25,12 +28,35 @@ function parseMateriales(raw: string | string[] | undefined): MaterialInput[] {
   }
 }
 
+function parseUbicacion(
+  raw: string | string[] | undefined,
+): Ubicacion | undefined {
+  if (typeof raw !== "string") return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.lat === "number" && typeof parsed?.lng === "number") {
+      return { lat: parsed.lat, lng: parsed.lng };
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function CotizacionScreen() {
-  const params = useLocalSearchParams<{ materiales?: string; prompt?: string }>();
+  const router = useRouter();
+  const params = useLocalSearchParams<{
+    materiales?: string;
+    prompt?: string;
+    ubicacion?: string;
+  }>();
   const [materiales] = useState(() => parseMateriales(params.materiales));
+  const [ubicacion] = useState(() => parseUbicacion(params.ubicacion));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CotizacionResponse | null>(null);
+  const [creando, setCreando] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   useEffect(() => {
     let activo = true;
@@ -43,6 +69,7 @@ export default function CotizacionScreen() {
       const res = await cotizacionApi.crear({
         prompt: typeof params.prompt === "string" ? params.prompt : undefined,
         materiales,
+        ubicacion,
       });
       if (!activo) return;
       if (!res.ok) {
@@ -56,7 +83,27 @@ export default function CotizacionScreen() {
     return () => {
       activo = false;
     };
-  }, [materiales, params.prompt]);
+  }, [materiales, params.prompt, ubicacion]);
+
+  async function crearPedido(
+    comercioId: string,
+    nombre: string,
+  ): Promise<void> {
+    if (!data) return;
+    setError(null);
+    setMensaje(null);
+    setCreando(comercioId);
+    const res = await pedidoApi.crear({
+      cotizacionId: data.cotizacion.id,
+      comercioId,
+    });
+    setCreando(null);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setMensaje(`Pedido creado en ${nombre}.`);
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
@@ -73,6 +120,15 @@ export default function CotizacionScreen() {
             <Text style={styles.section}>
               {data.comparacion.comercios.length} ferreterías comparadas
             </Text>
+
+            {mensaje ? (
+              <View style={styles.exito}>
+                <Text style={styles.exitoText}>{mensaje}</Text>
+                <Pressable onPress={() => router.push("/pedidos")}>
+                  <Text style={styles.exitoLink}>Ver mis pedidos ›</Text>
+                </Pressable>
+              </View>
+            ) : null}
 
             {data.comparacion.comercios.map((c) => (
               <View key={c.comercioId} style={styles.card}>
@@ -97,6 +153,21 @@ export default function CotizacionScreen() {
                     No tiene: {c.faltantes.map((f) => f.nombre).join(", ")}
                   </Text>
                 ) : null}
+
+                <Pressable
+                  style={[
+                    styles.pedidoButton,
+                    creando === c.comercioId && styles.disabled,
+                  ]}
+                  onPress={() => crearPedido(c.comercioId, c.nombre)}
+                  disabled={creando !== null}
+                >
+                  {creando === c.comercioId ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.pedidoButtonText}>Crear pedido</Text>
+                  )}
+                </Pressable>
               </View>
             ))}
 
@@ -146,4 +217,25 @@ const styles = StyleSheet.create({
   itemPrecio: { fontSize: 14, color: colors.muted },
   faltante: { color: colors.danger, fontSize: 12, marginTop: 8 },
   aviso: { color: colors.muted, fontSize: 12, marginTop: 6, fontStyle: "italic" },
+  pedidoButton: {
+    marginTop: 12,
+    backgroundColor: colors.primary,
+    borderRadius: radius,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  pedidoButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  disabled: { opacity: 0.6 },
+  exito: {
+    backgroundColor: "#dcfce7",
+    borderRadius: radius,
+    padding: 12,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  exitoText: { color: "#166534", fontSize: 14, fontWeight: "600", flex: 1 },
+  exitoLink: { color: "#166534", fontSize: 14, fontWeight: "700" },
 });

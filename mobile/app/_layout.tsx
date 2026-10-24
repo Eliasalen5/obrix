@@ -19,7 +19,14 @@ function Guard() {
     }
   }, [ready, user, segments, router]);
 
-  return <Stack screenOptions={{ headerTitleAlign: "center" }} />;
+  return (
+    <Stack screenOptions={{ headerTitleAlign: "center" }}>
+      <Stack.Screen name="index" options={{ title: "Asistente" }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="cotizacion" options={{ title: "Cotización" }} />
+      <Stack.Screen name="pedidos" options={{ title: "Mis pedidos" }} />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {

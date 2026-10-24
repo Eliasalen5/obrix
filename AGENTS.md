@@ -83,6 +83,12 @@ errores + `npm run build` OK.
   apuntar a la URL absoluta y adjuntar el Bearer. `request()` sigue igual para web.
 - **Auth/token:** sesión en `expo-secure-store`; login reutiliza
   `POST /api/v1/auth/token` (`authApi.login` en `src/lib/api/authClient.ts`).
+- **Pantallas (cliente):** `app/index.tsx` (asistente), `app/cotizacion.tsx`
+  (comparación + crear pedido), `app/pedidos.tsx` (listar/cancelar). Pedidos y
+  cotización reutilizan `pedidoClient`/`cotizacionClient` (mismas rutas que la web).
+- **Geolocalización (`expo-location`):** el asistente pide permiso y pasa
+  `ubicacion` a la cotización; el contrato Zod ya existía (la web usa
+  `navigator.geolocation`). Permiso declarado en `app.json` (plugin `expo-location`).
 - **Arranque en vivo (iOS/Expo Go):** Expo Go exige cuenta de Expo y que la CLI use
   la MISMA cuenta. En este Windows el login por navegador de la CLI falla
   (`cmd /c start` code 1) → autenticar con `EXPO_TOKEN` (`$env:EXPO_TOKEN=...`).

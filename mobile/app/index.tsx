@@ -10,8 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import * as Location from "expo-location";
 import { asistenteApi } from "@shared/api/asistenteClient";
 import { DESCRIPCION_MIN, type AsistenteResponse } from "@shared/validators/asistente";
+import type { Ubicacion } from "@shared/validators/cotizacion";
 import { useAuth } from "@/auth/AuthProvider";
 import { colors, radius } from "@/theme";
 
@@ -22,6 +24,9 @@ export default function AsistenteScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState<AsistenteResponse | null>(null);
+  const [ubicacion, setUbicacion] = useState<Ubicacion | null>(null);
+  const [ubicacionError, setUbicacionError] = useState<string | null>(null);
+  const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
 
   const puedeEnviar = descripcion.trim().length >= DESCRIPCION_MIN && !loading;
 
@@ -37,6 +42,29 @@ export default function AsistenteScreen() {
     setResultado(res.data);
   }
 
+  async function usarUbicacion() {
+    setUbicacionError(null);
+    setObteniendoUbicacion(true);
+    try {
+      const permiso = await Location.requestForegroundPermissionsAsync();
+      if (!permiso.granted) {
+        setUbicacionError("Permiso de ubicación denegado.");
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setUbicacion({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+    } catch {
+      setUbicacionError("No pudimos obtener tu ubicación. Podés cotizar igual.");
+    } finally {
+      setObteniendoUbicacion(false);
+    }
+  }
+
   function irACotizar() {
     if (!resultado) return;
     const materiales = resultado.materiales.map((m) => ({
@@ -46,7 +74,11 @@ export default function AsistenteScreen() {
     }));
     router.push({
       pathname: "/cotizacion",
-      params: { materiales: JSON.stringify(materiales), prompt: resultado.titulo },
+      params: {
+        materiales: JSON.stringify(materiales),
+        prompt: resultado.titulo,
+        ...(ubicacion ? { ubicacion: JSON.stringify(ubicacion) } : {}),
+      },
     });
   }
 
@@ -54,13 +86,18 @@ export default function AsistenteScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <View>
+          <View style={styles.flex}>
             <Text style={styles.hi}>Hola, {user?.name ?? "cliente"}</Text>
             <Text style={styles.title}>¿Qué querés construir?</Text>
           </View>
-          <Pressable onPress={logout}>
-            <Text style={styles.logout}>Salir</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable onPress={() => router.push("/pedidos")}>
+              <Text style={styles.link}>Pedidos</Text>
+            </Pressable>
+            <Pressable onPress={logout}>
+              <Text style={styles.link}>Salir</Text>
+            </Pressable>
+          </View>
         </View>
 
         <TextInput
@@ -72,6 +109,19 @@ export default function AsistenteScreen() {
           onChangeText={setDescripcion}
         />
         <Text style={styles.hint}>Mínimo {DESCRIPCION_MIN} caracteres</Text>
+
+        <Pressable style={styles.ubicacion} onPress={usarUbicacion} disabled={obteniendoUbicacion}>
+          {obteniendoUbicacion ? (
+            <ActivityIndicator color={colors.accent} size="small" />
+          ) : (
+            <Text style={styles.ubicacionText}>
+              {ubicacion
+                ? `Ubicación lista: ${ubicacion.lat.toFixed(3)}, ${ubicacion.lng.toFixed(3)}`
+                : "Usar mi ubicación (opcional, ordena por cercanía)"}
+            </Text>
+          )}
+        </Pressable>
+        {ubicacionError ? <Text style={styles.error}>{ubicacionError}</Text> : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -119,10 +169,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 20,
+    gap: 12,
   },
+  flex: { flex: 1 },
   hi: { color: colors.muted, fontSize: 14 },
   title: { fontSize: 22, fontWeight: "800", color: colors.text, marginTop: 2 },
-  logout: { color: colors.accent, fontWeight: "600", padding: 4 },
+  headerActions: { flexDirection: "row", gap: 14, paddingTop: 2 },
+  link: { color: colors.accent, fontWeight: "600", padding: 4 },
+  ubicacion: {
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  ubicacionText: { color: colors.accent, fontSize: 13, fontWeight: "600" },
   textarea: {
     backgroundColor: colors.card,
     borderRadius: radius,
