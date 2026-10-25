@@ -109,3 +109,18 @@ export function resolveLoginLimitPerMin(
   if (!Number.isFinite(raw) || raw <= 0) return LOGIN_LIMIT_PER_MIN;
   return Math.floor(raw);
 }
+
+export const REGISTRO_LIMIT_PER_MIN = 5;
+
+export const registroRateLimiter = new RateLimiter(
+  resolveRegistroLimitPerMin(),
+  RATE_LIMIT_WINDOW_MS,
+);
+
+export function resolveRegistroLimitPerMin(
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  const raw = Number(env.REGISTRO_RATE_LIMIT_PER_MIN);
+  if (!Number.isFinite(raw) || raw <= 0) return REGISTRO_LIMIT_PER_MIN;
+  return Math.floor(raw);
+}

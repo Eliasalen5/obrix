@@ -99,6 +99,21 @@ export default function IngresarForm() {
         </button>
       </form>
 
+      <div className="mt-6 flex flex-col gap-2 text-center text-sm text-zinc-600 dark:text-zinc-400">
+        <p>
+          ¿No tenés cuenta?{" "}
+          <a className="text-blue-600 hover:underline" href="/registro/cliente">
+            Crear cuenta cliente
+          </a>
+        </p>
+        <p>
+          ¿Sos comercio?{" "}
+          <a className="text-blue-600 hover:underline" href="/registro/comercio">
+            Solicitar alta
+          </a>
+        </p>
+      </div>
+
       <div className="mt-8 rounded-lg border border-dashed border-zinc-300 p-4 text-sm dark:border-zinc-700">
         <p className="font-medium">Cuentas de demo</p>
         <p className="mt-1 text-zinc-500 dark:text-zinc-400">

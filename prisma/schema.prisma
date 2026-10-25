@@ -22,6 +22,8 @@ model Usuario {
   cotizaciones Cotizacion[]
   pedidos      Pedido[]
   solicitudesRevisadas SolicitudProducto[]
+  solicitudesAltaRevisadas SolicitudAltaComercio[]
+  solicitudesAltaSolicitante SolicitudAltaComercio? @relation("SolicitudAltaSolicitante")
 }
 
 model Categoria {
@@ -89,6 +91,7 @@ model Comercio {
   ofertas   Oferta[]
   pedidos   Pedido[]
   solicitudes SolicitudProducto[]
+  solicitudAlta SolicitudAltaComercio?
   createdAt DateTime  @default(now())
 }
 
@@ -153,4 +156,34 @@ model ItemPedido {
   producto      Producto @relation(fields: [productoId], references: [id])
   cantidad      Float
   precioUnitario Float // precio al momento de comprar
+}
+
+model SolicitudAltaComercio {
+  id                String    @id @default(cuid())
+  solicitanteId     String    @unique
+  solicitante       Usuario   @relation("SolicitudAltaSolicitante", fields: [solicitanteId], references: [id])
+  estado            String    @default("PENDIENTE") // PENDIENTE | APROBADA | RECHAZADA
+  nombreFantasia    String
+  razonSocial       String    @default("")
+  cuit              String    @default("")
+  direccion         String
+  provincia         String    @default("")
+  localidad         String    @default("")
+  lat               Float
+  lng               Float
+  telefonoComercial String    @default("")
+  telefonoTitular   String    @default("")
+  rubro             String    @default("")
+  categorias        Json      @default("[]")
+  datosExtras       Json      @default("{}")
+  motivoRechazo     String    @default("")
+  revisadoById      String?
+  revisadoBy        Usuario?  @relation(fields: [revisadoById], references: [id])
+  comercioId        String?   @unique
+  comercio          Comercio? @relation(fields: [comercioId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([estado])
+  @@index([createdAt])
 }
