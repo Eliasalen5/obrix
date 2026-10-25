@@ -53,6 +53,7 @@ export async function request<T>(
   try {
     res = await fetch(resolveUrl(url), {
       ...init,
+      credentials: init.credentials ?? "same-origin",
       headers: hasHeaders ? mergedHeaders : undefined,
     });
   } catch {
