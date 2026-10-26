@@ -25,7 +25,7 @@ Web app + app mobile (Expo) donde el usuario describe lo que quiere hacer ("quie
    cp .env.example .env
    ```
 
-   Variables principales: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `IA_API_KEY` / `IA_DEMO`, `RATE_LIMIT_PER_MIN`, `SEED_DEMO_PASSWORD`.
+   Variables principales: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `IA_API_KEY` / `IA_DEMO`, `RATE_LIMIT_PER_MIN`, `LOGIN_RATE_LIMIT_PER_MIN`, `SEED_DEMO_PASSWORD`.
 
 3. Aplicar migraciones y sembrar datos demo:
 
@@ -44,7 +44,7 @@ Web app + app mobile (Expo) donde el usuario describe lo que quiere hacer ("quie
 
 ## App Mobile (`mobile/`)
 
-Obrix cuenta con una app móvil en `mobile/` (Expo SDK 58 + expo-router). Reutiliza validadores, clientes HTTP y lógica compartida desde la web vía el alias `@shared/*` → `src/lib/*`.
+App móvil para cliente en `mobile/` (Expo SDK 58 + expo-router). Reutiliza validadores, clientes HTTP y lógica compartida desde la web vía el alias `@shared/*` → `src/lib/*`.
 
 1. Instalar dependencias (desde `mobile/`):
 
@@ -53,7 +53,7 @@ Obrix cuenta con una app móvil en `mobile/` (Expo SDK 58 + expo-router). Reutil
    npm install --legacy-peer-deps
    ```
 
-2. Configurar `mobile/.env` con la URL de la API en tu red LAN:
+2. Configurar `mobile/.env` con la URL de la API en tu red LAN (o la URL de Vercel):
 
    ```env
    EXPO_PUBLIC_API_URL=http://<IP_DE_TU_PC>:3000
@@ -66,10 +66,12 @@ Obrix cuenta con una app móvil en `mobile/` (Expo SDK 58 + expo-router). Reutil
    ```
 
 Notas importantes:
-- Usa autenticación por token vía `POST /api/v1/auth/token` (`authApi.login`) y `expo-secure-store`.
-- Geolocalización con `expo-location` para pasar `ubicacion` al cotizador.
-- En Expo Go, puede ser necesario usar `EXPO_TOKEN` si el login por navegador falla en Windows.
-- Ver [`AGENTS.md`](./AGENTS.md) para detalles de configuración, Metro y arranque en vivo.
+- **Auth dual:** web usa sesión NextAuth (cookie httpOnly), mobile usa token JWT vía `Authorization: Bearer ...` obtenido con `POST /api/v1/auth/token` (`authApi.login`).
+- **Almacenamiento seguro:** sesión/token guardado con `expo-secure-store`.
+- **Geolocalización:** `expo-location` solicita permiso y pasa `ubicacion` al cotizador.
+- **Arranque en vivo (iOS/Expo Go):** puede requerir iniciar sesión en Expo CLI. En Windows puede fallar el login por navegador → usar `EXPO_TOKEN`. La CLI y el dispositivo deben usar la misma cuenta.
+- **Reutilización:** validadores (`src/lib/validators`), clientes API (`src/lib/api`) y contratos compartidos vía `@shared/*` (un solo source of truth).
+- Ver [`AGENTS.md`](./AGENTS.md) para detalles de Metro, alias y configuración.
 
 ## Credenciales demo (seed)
 
@@ -89,7 +91,7 @@ Contraseña: valor de `SEED_DEMO_PASSWORD` (por defecto `obrix1234`).
 | `npm test` | Tests con Vitest |
 | `npx tsc --noEmit` | Chequeo de tipos |
 | `npm run lint` | Lint con ESLint |
-| `npm run db:deploy` | `prisma migrate deploy` |
+| `npm run db:deploy` | `prisma migrate deploy` (migraciones versionadas) |
 | `npm run db:seed` | Sembrar datos demo |
 | `npx prisma generate` | Regenerar cliente Prisma (`src/generated/prisma`) |
 
@@ -97,9 +99,9 @@ Contraseña: valor de `SEED_DEMO_PASSWORD` (por defecto `obrix1234`).
 
 ## Stack
 
-- **Web:** Next.js (App Router) + TypeScript + Tailwind CSS + Prisma + PostgreSQL + NextAuth (JWT) + Zod + Vitest
+- **Web:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS 4 + Prisma 7 + PostgreSQL + NextAuth 4 (JWT) + Zod 4 + Vitest 5
 - **IA:** Proveedor intercambiable en `src/lib/ai`. Sin `IA_API_KEY` cae a modo demo (`IA_DEMO`).
-- **Mobile:** Expo SDK 58 + expo-router + TypeScript + `expo-secure-store` + `expo-location`
+- **Mobile:** Expo SDK 58 + expo-router + React Native 0.88 + TypeScript + `expo-secure-store` + `expo-location` + Zod
 
 ## Arquitectura
 
@@ -107,12 +109,18 @@ Contraseña: valor de `SEED_DEMO_PASSWORD` (por defecto `obrix1234`).
 - **Validación:** Zod en `src/lib/validators` (fuente única de verdad, usado en server y client).
 - **Clientes HTTP:** `src/lib/api` con `httpClient.request`. `configureHttp` disponible para clientes externos (usado por mobile).
 - **Autorización:** por rol en cada ruta API (`apiAuth`/`decideAccess`) y guards en layouts `src/app/(cliente)`, `(comercio)`, `(admin)`. `comercioId`/`clienteId` se derivan siempre de la sesión.
-- **API:** REST en `src/app/api/**/route.ts`.
+- **API versionada:** handlers canónicos bajo `/api/v1/*`. Alias legacy `/api/*` con headers `Deprecation`/`Link` vía `src/proxy.ts`.
+- **Auth dual:** cookie httpOnly (web) o `Authorization: Bearer <jwt>` (mobile), reutilizando el mismo JWT de NextAuth con soporte a revocación (`token.invalid`).
 - **Errores:** `jsonError`, `zodDetails`, `prismaErrorResponse` en `src/lib/api/http.ts` (mapeo P2002→409, P2003→400, P2014→409, P2025→404).
-- **Prisma:** esquema en `prisma/schema.prisma`, migraciones en `prisma/migrations`. Cliente generado en `src/generated/prisma` (gitignoreado).
+- **Rate limiting:** por email para login (`loginRateLimiter`) y por usuario/endpoint para IA. Actualmente en memoria por instancia (`MemoryRateLimitStore`).
+- **Prisma:** esquema en `prisma/schema.prisma`, migraciones versionadas en `prisma/migrations`. Cliente generado en `src/generated/prisma` (gitignoreado).
 
 ## Estado
 
-- **Web:** Fases 1–10 completadas (catálogo maestro, auth/roles, paneles por rol, asistente IA, cotizador/comparador, cercanía, pedidos y solicitudes de producto con revisión admin).
-- **Mobile:** Proyecto iniciado en `mobile/` (Expo). Implementadas pantallas de asistente, cotización, pedidos, auth por token y geolocalización.
-- **Pendiente:** Deploy a producción y pulido final de la app mobile (ver [`PROMPT.md`](./PROMPT.md)).
+- **Web:** Fases 1–12 completadas y verificadas. Desplegada en **Vercel** sobre **Prisma Postgres** con migraciones versionadas.
+- **Mobile (Fase 13 - MVP):** Proyecto `mobile/` funcional. Login por token, asistente IA, cotización/comparador, crear pedido, mis pedidos (cancelar). **Geolocalización** implementada con `expo-location`. Probado en vivo en iPhone (Expo Go, SDK 58).
+- **En progreso/parcial:**
+  - **Fase 14:** Cámara/código de barras (pendiente, requiere endpoint de búsqueda por `codigoBarras`) y push (diferido a development build; Expo Go iOS no soporta push).
+  - **Fase 15:** Hardening y escalabilidad. Falta **rate limit con store compartido** (Redis/Upstash) detrás de `RateLimitStore` para entornos serverless/multi-instancia.
+- **Verificación:** `npm test` 328/328 (37 archivos), `npx tsc --noEmit` 0 errores, `next build` OK.
+- **Seguridad:** `npm audit` reporta 5 vulnerabilidades high en `eslint-config-next` (tooling de lint, no runtime). No se aplican fixes con `--force` (breaking) hasta resolución upstream.
