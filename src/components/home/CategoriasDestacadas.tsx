@@ -1,14 +1,15 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const CATEGORIAS = [
-  { nombre: "Cemento y hormigón", slug: "cemento" },
-  { nombre: "Hierro y acero", slug: "hierro" },
-  { nombre: "Ladrillos y bloques", slug: "ladrillos" },
-  { nombre: "Pintura y revestimientos", slug: "pintura" },
-  { nombre: "Sanitarios y grifería", slug: "sanitarios" },
-  { nombre: "Herramientas", slug: "herramientas" },
-  { nombre: "Electricidad", slug: "electricidad" },
-  { nombre: "Plomería", slug: "plomeria" },
+  { nombre: "Cemento y hormigón", slug: "cemento", img: "/cemento.jpg" },
+  { nombre: "Hierro y acero", slug: "hierro", img: "/hierro.jpg" },
+  { nombre: "Ladrillos y bloques", slug: "ladrillos", img: "/ladrillos.jpg" },
+  { nombre: "Pintura y revestimientos", slug: "pintura", img: "/pintura.jpg" },
+  { nombre: "Sanitarios y grifería", slug: "sanitarios", img: "/sanitarios.jpg" },
+  { nombre: "Herramientas", slug: "herramientas", img: "/herramientas.jpg" },
+  { nombre: "Electricidad", slug: "electricidad", img: "/electricidad.jpg" },
+  { nombre: "Plomería", slug: "plomeria", img: "/plomeria.jpg" },
 ];
 
 export default function CategoriasDestacadas() {
@@ -24,28 +25,26 @@ export default function CategoriasDestacadas() {
           </p>
         </div>
       </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {CATEGORIAS.map((cat) => (
           <Link
             key={cat.slug}
             href="/cliente/proyecto"
-            className="group rounded-xl border border-zinc-200 p-4 transition-all hover:border-zinc-400 hover:shadow-sm dark:border-zinc-800 dark:hover:border-zinc-600"
+            className="group relative overflow-hidden rounded-xl border border-zinc-200 transition-all hover:shadow-lg dark:border-zinc-800"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">{cat.nombre}</h3>
-              <svg
-                className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-1 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+            <div className="relative h-36 w-full">
+              <Image
+                src={cat.img}
+                alt={cat.nombre}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <h3 className="font-medium text-white drop-shadow-sm">
+                {cat.nombre}
+              </h3>
             </div>
           </Link>
         ))}
