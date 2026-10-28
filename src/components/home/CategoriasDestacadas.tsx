@@ -8,7 +8,7 @@ const CATEGORIAS = [
   {
     nombre: "Ferreterías",
     slug: "ferreterias",
-    img: "/herramientas.jpg",
+    img: "/ferreteria.jpg",
   },
   {
     nombre: "Corralones y materiales de construcción",
