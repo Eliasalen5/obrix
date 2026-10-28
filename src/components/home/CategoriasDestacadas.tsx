@@ -23,12 +23,12 @@ const CATEGORIAS = [
   {
     nombre: "Casas de electricidad",
     slug: "electricidad",
-    img: "/electricidad.jpg",
+    img: "/electricidad.webp",
   },
   {
     nombre: "Sanitarios, plomería y gas",
     slug: "sanitarios",
-    img: "/sanitarios.jpg",
+    img: "/sanitarios-plomeria.jpg",
   },
   {
     nombre: "Casas de pesca y náutica",
