@@ -13,7 +13,7 @@ const CATEGORIAS = [
   {
     nombre: "Corralones y materiales de construcción",
     slug: "corralones",
-    img: "/cemento.jpg",
+    img: "/corralones.png",
   },
   {
     nombre: "Pinturerías",
