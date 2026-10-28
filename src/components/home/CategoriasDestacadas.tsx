@@ -32,12 +32,12 @@ const CATEGORIAS = [
   {
     nombre: "Casas de pesca y náutica",
     slug: "pesca",
-    img: "/herramientas.jpg",
+    img: "/pesca-nautica.jpg",
   },
   {
     nombre: "Madereras y carpintería",
     slug: "madereras",
-    img: "/ladrillos.jpg",
+    img: "/madera-carpinteria.jpg",
   },
   {
     nombre: "Jardinería, viveros y riego",
