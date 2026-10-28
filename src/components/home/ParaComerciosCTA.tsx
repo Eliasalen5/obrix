@@ -9,9 +9,10 @@ export default function ParaComerciosCTA() {
             Sumá tu comercio y empezá a recibir pedidos
           </h2>
           <p className="mt-3 text-zinc-600 dark:text-zinc-400">
-            Obrix conecta tu ferretería, corralón, pinturería o negocio de
-            materiales con clientes de tu zona. Publicá tus ofertas, gestioná tu
-            stock y recibí pedidos directos.
+            Sumá tu ferretería, corralón, pinturería o negocio de materiales a
+            Obrix y empezá a recibir pedidos directos de clientes que ya están
+            buscando lo que vos vendés. Publicá tus ofertas y gestioná tu stock
+            desde un solo lugar.
           </p>
           <ul className="mt-6 grid gap-2 text-sm text-zinc-700 dark:text-zinc-300 sm:grid-cols-2">
             <li className="flex items-center justify-center gap-2">
