@@ -75,6 +75,16 @@ const CATEGORIAS = [
     slug: "maquinas",
     img: "/herramientas.jpg",
   },
+  {
+    nombre: "Vidrierías",
+    slug: "vidrierias",
+    img: "/vidrierias.jpg",
+  },
+  {
+    nombre: "Repuestos de autos",
+    slug: "repuestos-autos",
+    img: "/repuestos-autos.jpg",
+  },
 ];
 
 export default function CategoriasDestacadas() {
@@ -90,8 +100,8 @@ export default function CategoriasDestacadas() {
     }
   };
 
-  const firstRow = CATEGORIAS.slice(0, 7);
-  const secondRow = CATEGORIAS.slice(7, 14);
+  const firstRow = CATEGORIAS.slice(0, 8);
+  const secondRow = CATEGORIAS.slice(8, 16);
 
   return (
     <section id="categorias" className="mx-auto w-full max-w-6xl px-4 py-12">
