@@ -24,7 +24,7 @@ export async function verifyCredentials(
   if (!parsed.success) return null;
 
   // Rate limit por email antes de tocar la DB/bcrypt (mitiga fuerza bruta).
-  const limit = loginRateLimiter.check(`login:${parsed.data.email}`);
+  const limit = await loginRateLimiter.check(`login:${parsed.data.email}`);
   if (!limit.allowed) return null;
 
   const { email, password } = parsed.data;

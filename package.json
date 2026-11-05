@@ -16,6 +16,8 @@
     "@next-auth/prisma-adapter": "^1.0.7",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.0",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.41.0",
     "bcryptjs": "^3.0.3",
     "next": "^16.4.3",
     "next-auth": "^4.24.15",
@@ -40,6 +42,11 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.3",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.4"
+    }
   }
 }

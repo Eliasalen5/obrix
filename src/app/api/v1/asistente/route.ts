@@ -15,8 +15,14 @@ export async function POST(request: NextRequest) {
   const access = await requireAsistenteApi();
   if (!access.ok) return jsonError(access.status, access.error);
 
-  const limit = asistenteRateLimiter.check(`user:${access.userId}`);
+  const limit = await asistenteRateLimiter.check(`user:${access.userId}`);
   if (!limit.allowed) {
+    if (limit.degraded) {
+      return jsonError(
+        503,
+        "El asistente no está disponible en este momento. Intentá de nuevo más tarde.",
+      );
+    }
     return Response.json(
       { error: "Demasiadas solicitudes. Esperá unos segundos e intentá de nuevo." },
       {

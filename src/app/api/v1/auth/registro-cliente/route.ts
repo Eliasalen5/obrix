@@ -13,7 +13,7 @@ function getClientKey(h: Headers) {
 
 export async function POST(request: NextRequest) {
   const h = await headers();
-  const limit = registroRateLimiter.check(`registro:ip:${getClientKey(h)}`);
+  const limit = await registroRateLimiter.check(`registro:ip:${getClientKey(h)}`);
   if (!limit.allowed) {
     return Response.json(
       { error: "Demasiados intentos de registro. Intentá de nuevo más tarde." },

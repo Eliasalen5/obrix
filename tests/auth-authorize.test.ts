@@ -65,6 +65,51 @@ describe("authOptions.authorize — rate limit y credenciales", () => {
     expect(res.role).toBe(ROLES.COMERCIO);
   });
 
+  it("normaliza mayúsculas y espacios del email antes de buscar", async () => {
+    db.usuario.findUnique.mockResolvedValue({
+      id: "u1",
+      email: CREDS.email,
+      nombre: "Ana",
+      rol: ROLES.CLIENTE,
+      passwordHash: "hash",
+      tokenVersion: 0,
+    });
+    verifyMock.mockResolvedValue(true);
+
+    const res = (await authorize()({
+      email: "  User@Test.COM ",
+      password: CREDS.password,
+    })) as { id: string };
+
+    expect(res.id).toBe("u1");
+    expect(db.usuario.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { email: CREDS.email } }),
+    );
+  });
+
+  it("fail-open si el rate limit no está disponible", async () => {
+    const spy = vi.spyOn(loginRateLimiter, "check").mockResolvedValue({
+      allowed: true,
+      limit: LOGIN_LIMIT_PER_MIN,
+      remaining: 0,
+      retryAfterMs: 0,
+      degraded: true,
+    });
+    db.usuario.findUnique.mockResolvedValue({
+      id: "u1",
+      email: CREDS.email,
+      nombre: "Ana",
+      rol: ROLES.CLIENTE,
+      passwordHash: "hash",
+      tokenVersion: 0,
+    });
+    verifyMock.mockResolvedValue(true);
+
+    const res = await authorize()(CREDS);
+    expect(res).not.toBeNull();
+    spy.mockRestore();
+  });
+
   it("bloquea tras superar el límite de intentos (fuerza bruta) → null", async () => {
     for (let i = 0; i < LOGIN_LIMIT_PER_MIN; i++) {
       await authorize()(CREDS);

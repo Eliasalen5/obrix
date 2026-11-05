@@ -1,15 +1,17 @@
 /**
- * Rate limiting en memoria (ventana fija) por clave (típicamente usuario o IP).
+ * Rate limiting con memoria local para desarrollo/tests y Upstash Redis para
+ * producción.
  *
- * LIMITACIONES DEL ALMACENAMIENTO LOCAL:
- * - El estado vive en el proceso de Node: es por instancia y se pierde al
- *   reiniciar. En despliegues con varias instancias o serverless (cada request
- *   puede caer en un proceso distinto) el límite real es "por instancia", no
- *   global. Para producción multi-instancia, reemplazar `MemoryRateLimitStore`
- *   por un store compartido (Redis/Upstash) implementando `RateLimitStore`.
- * - No hay limpieza automática de claves vencidas; para volúmenes grandes
- *   conviene un store con TTL o un barrido periódico.
+ * - Memoria: el estado vive en el proceso. Sirve para una única instancia o
+ *   para tests, pero no es global en serverless.
+ * - Upstash: contador atómico compartido entre todas las instancias. Se activa
+ *   con `RATE_LIMIT_STORE=upstash` y las credenciales REST.
+ * - Si el store falla, cada limiter decide entre fail-open (login/registro) o
+ *   fail-closed (IA) mediante `onStoreError`.
  */
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
 export const DEFAULT_LIMIT_PER_MIN = 10;
 export const RATE_LIMIT_WINDOW_MS = 60_000;
 
@@ -18,6 +20,7 @@ export type RateLimitResult = {
   limit: number;
   remaining: number;
   retryAfterMs: number;
+  degraded?: boolean;
 };
 
 export type RateLimitEntry = { count: number; resetAt: number };
@@ -26,6 +29,11 @@ export interface RateLimitStore {
   get(key: string): RateLimitEntry | undefined;
   set(key: string, value: RateLimitEntry): void;
   clear(): void;
+}
+
+export interface RateLimiterLike {
+  check(key: string): Promise<RateLimitResult>;
+  reset(): void;
 }
 
 export class MemoryRateLimitStore implements RateLimitStore {
@@ -44,7 +52,7 @@ export class MemoryRateLimitStore implements RateLimitStore {
   }
 }
 
-export class RateLimiter {
+export class RateLimiter implements RateLimiterLike {
   constructor(
     private readonly limit: number,
     private readonly windowMs: number,
@@ -52,7 +60,7 @@ export class RateLimiter {
     private readonly now: () => number = () => Date.now(),
   ) {}
 
-  check(key: string): RateLimitResult {
+  async check(key: string): Promise<RateLimitResult> {
     const t = this.now();
     const current = this.store.get(key);
 
@@ -77,6 +85,139 @@ export class RateLimiter {
   }
 }
 
+type RateLimitErrorPolicy = "allow" | "deny";
+
+export type RateLimiterConfig = {
+  limit: number;
+  windowMs: number;
+  prefix: string;
+  onStoreError: RateLimitErrorPolicy;
+};
+
+export class UpstashRateLimiter implements RateLimiterLike {
+  private readonly ratelimit: Ratelimit;
+
+  constructor(limit: number, windowMs: number, prefix: string, redis: Redis) {
+    const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000));
+    this.ratelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, `${windowSeconds} s`),
+      prefix,
+    });
+  }
+
+  async check(key: string): Promise<RateLimitResult> {
+    const result = await this.ratelimit.limit(key);
+    return {
+      allowed: result.success,
+      limit: result.limit,
+      remaining: result.remaining,
+      retryAfterMs: result.success ? 0 : Math.max(0, result.reset - Date.now()),
+    };
+  }
+
+  reset(): void {
+    // El store compartido no se limpia desde la aplicación.
+  }
+}
+
+class UnavailableRateLimiter implements RateLimiterLike {
+  constructor(private readonly config: RateLimiterConfig) {}
+
+  async check(): Promise<RateLimitResult> {
+    return {
+      allowed: this.config.onStoreError === "allow",
+      limit: this.config.limit,
+      remaining: 0,
+      retryAfterMs: 0,
+      degraded: true,
+    };
+  }
+
+  reset(): void {}
+}
+
+class GuardedRateLimiter implements RateLimiterLike {
+  private warned = false;
+
+  constructor(
+    private readonly inner: RateLimiterLike,
+    private readonly config: RateLimiterConfig,
+  ) {}
+
+  async check(key: string): Promise<RateLimitResult> {
+    try {
+      return await this.inner.check(key);
+    } catch (error) {
+      if (!this.warned) {
+        this.warned = true;
+        console.error(`[rate-limit:${this.config.prefix}] store error`, error);
+      }
+      return {
+        allowed: this.config.onStoreError === "allow",
+        limit: this.config.limit,
+        remaining: 0,
+        retryAfterMs: 0,
+        degraded: true,
+      };
+    }
+  }
+
+  reset(): void {
+    this.inner.reset();
+  }
+}
+
+type StoreResolution =
+  | { kind: "memory" }
+  | { kind: "upstash"; url: string; token: string }
+  | { kind: "unavailable" };
+
+export function resolveRateLimitStore(
+  env: NodeJS.ProcessEnv = process.env,
+): StoreResolution {
+  const mode = env.RATE_LIMIT_STORE?.trim().toLowerCase();
+  const url = env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = env.UPSTASH_REDIS_REST_TOKEN?.trim();
+
+  if (mode === "memory") return { kind: "memory" };
+  if (url && token) return { kind: "upstash", url, token };
+  if (mode === "upstash") return { kind: "unavailable" };
+  return { kind: "memory" };
+}
+
+export function createRateLimiter(
+  config: RateLimiterConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): RateLimiterLike {
+  const store = resolveRateLimitStore(env);
+
+  if (store.kind === "upstash") {
+    const redis = new Redis({ url: store.url, token: store.token });
+    return new GuardedRateLimiter(
+      new UpstashRateLimiter(
+        config.limit,
+        config.windowMs,
+        config.prefix,
+        redis,
+      ),
+      config,
+    );
+  }
+
+  if (store.kind === "unavailable") {
+    console.error(
+      `[rate-limit:${config.prefix}] RATE_LIMIT_STORE=upstash pero faltan UPSTASH_REDIS_REST_URL/TOKEN`,
+    );
+    return new UnavailableRateLimiter(config);
+  }
+
+  return new GuardedRateLimiter(
+    new RateLimiter(config.limit, config.windowMs),
+    config,
+  );
+}
+
 export function resolveLimitPerMin(
   env: NodeJS.ProcessEnv = process.env,
 ): number {
@@ -85,10 +226,12 @@ export function resolveLimitPerMin(
   return Math.floor(raw);
 }
 
-export const asistenteRateLimiter = new RateLimiter(
-  resolveLimitPerMin(),
-  RATE_LIMIT_WINDOW_MS,
-);
+export const asistenteRateLimiter = createRateLimiter({
+  limit: resolveLimitPerMin(),
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  prefix: "obrix:rl:asistente",
+  onStoreError: "deny",
+});
 
 /**
  * Limiter para intentos de login (credenciales). Clave por email normalizado:
@@ -97,10 +240,12 @@ export const asistenteRateLimiter = new RateLimiter(
  */
 export const LOGIN_LIMIT_PER_MIN = 8;
 
-export const loginRateLimiter = new RateLimiter(
-  resolveLoginLimitPerMin(),
-  RATE_LIMIT_WINDOW_MS,
-);
+export const loginRateLimiter = createRateLimiter({
+  limit: resolveLoginLimitPerMin(),
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  prefix: "obrix:rl:login",
+  onStoreError: "allow",
+});
 
 export function resolveLoginLimitPerMin(
   env: NodeJS.ProcessEnv = process.env,
@@ -112,10 +257,12 @@ export function resolveLoginLimitPerMin(
 
 export const REGISTRO_LIMIT_PER_MIN = 5;
 
-export const registroRateLimiter = new RateLimiter(
-  resolveRegistroLimitPerMin(),
-  RATE_LIMIT_WINDOW_MS,
-);
+export const registroRateLimiter = createRateLimiter({
+  limit: resolveRegistroLimitPerMin(),
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  prefix: "obrix:rl:registro",
+  onStoreError: "allow",
+});
 
 export function resolveRegistroLimitPerMin(
   env: NodeJS.ProcessEnv = process.env,

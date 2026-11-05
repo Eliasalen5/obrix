@@ -177,4 +177,21 @@ describe("asistente — rate limiting", () => {
     sessionMock.mockResolvedValue({ userId: "u2", role: ROLES.CLIENTE });
     expect((await asistente.POST(req(body))).status).toBe(200);
   });
+
+  it("responde 503 si el store compartido no está disponible", async () => {
+    conSesionRol(ROLES.CLIENTE);
+    const spy = vi.spyOn(asistenteRateLimiter, "check").mockResolvedValue({
+      allowed: false,
+      limit: 10,
+      remaining: 0,
+      retryAfterMs: 0,
+      degraded: true,
+    });
+
+    const res = await asistente.POST(
+      req({ descripcion: "quiero hacer una parrilla de 1,5 m" }),
+    );
+    expect(res.status).toBe(503);
+    spy.mockRestore();
+  });
 });

@@ -61,6 +61,7 @@ export default function IngresarForm() {
             id="email"
             type="email"
             autoComplete="email"
+            autoCapitalize="none"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}

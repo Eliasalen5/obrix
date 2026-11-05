@@ -20,6 +20,13 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
+  {
+    // Metro/Expo exige configuración CommonJS.
+    files: ["mobile/metro.config.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -29,6 +36,11 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Código generado por Prisma (no se versiona ni se lintea).
     "src/generated/**",
+    // Scripts locales temporales de lectura de Excel.
+    "_extract_all.js",
+    "_inspect_sheets.js",
+    "_read_xlsx.js",
+    "_read_xlsx_all.js",
   ]),
 ]);
 

@@ -55,7 +55,8 @@ errores + `npm run build` OK.
 4. Contraseñas con bcryptjs. Secretos solo en `.env`; nunca en el cliente ni en
    git. `.env.example` sin valores reales.
 5. Rate limit en endpoints públicos (IA/auth) vía `src/lib/rate-limit.ts`
-   (hoy en memoria/por instancia → migrar a store compartido para escalar).
+   (memoria en dev/test; Upstash Redis en producción. Login/registro fail-open;
+   IA fail-closed si el store compartido no está disponible).
 6. Sanitizar texto del usuario; no desactivar el escape de Next.js.
 7. No loguear secretos; los 500 no filtran stack. `npm audit` al cerrar fase.
 

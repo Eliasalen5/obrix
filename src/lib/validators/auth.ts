@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+const emailSchema = z.string().trim().toLowerCase().email("Email inválido");
+
 export const registerSchema = z
   .object({
-    email: z.string().trim().email("Email inválido"),
+    email: emailSchema,
     password: z.string().min(8, "Mínimo 8 caracteres"),
     confirmPassword: z.string().min(8, "Mínimo 8 caracteres"),
     nombre: z.string().trim().min(2, "Nombre requerido (mínimo 2 caracteres)"),
@@ -20,7 +22,7 @@ export const registerSchema = z
   });
 
 export const loginSchema = z.object({
-  email: z.string().trim().email("Email inválido"),
+  email: emailSchema,
   password: z.string().min(1, "Contraseña requerida"),
 });
 
@@ -37,7 +39,7 @@ const coordenadaSchema = z.coerce
 
 export const registroClienteSchema = z
   .object({
-    email: z.string().trim().email("Email inválido"),
+    email: emailSchema,
     password: z.string().min(8, "Mínimo 8 caracteres"),
     confirmPassword: z.string().min(8, "Mínimo 8 caracteres"),
     nombre: z.string().trim().min(2, "Nombre requerido (mínimo 2 caracteres)"),
@@ -57,7 +59,7 @@ export const registroClienteSchema = z
 export const solicitudAltaComercioSchema = z
   .object({
     // Datos del titular
-    email: z.string().trim().email("Email inválido"),
+    email: emailSchema,
     password: z.string().min(8, "Mínimo 8 caracteres"),
     confirmPassword: z.string().min(8, "Mínimo 8 caracteres"),
     nombreTitular: z
