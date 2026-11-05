@@ -91,7 +91,12 @@ const SOLICITUD = {
 
 function withComercio() {
   sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
-  db.comercio.findUnique.mockResolvedValue({ id: "com1" });
+  db.comercio.findUnique.mockResolvedValue({ id: "com1", activo: true });
+}
+
+function withComercioInactivo() {
+  sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
+  db.comercio.findUnique.mockResolvedValue({ id: "com1", activo: false });
 }
 
 function withAdmin() {
@@ -196,6 +201,18 @@ describe("comercio — solicitudes de producto", () => {
       jsonReq(C_BASE, "POST", { propuesta: PROPUESTA }),
     );
     expect(res.status).toBe(403);
+  });
+
+  it("COMERCIO inactivo no puede listar ni crear solicitudes → 403", async () => {
+    withComercioInactivo();
+    const list = await comercioSolicitudes.GET(req(C_BASE));
+    const create = await comercioSolicitudes.POST(
+      jsonReq(C_BASE, "POST", { propuesta: PROPUESTA }),
+    );
+    expect(list.status).toBe(403);
+    expect(create.status).toBe(403);
+    expect(db.solicitudProducto.findMany).not.toHaveBeenCalled();
+    expect(db.solicitudProducto.create).not.toHaveBeenCalled();
   });
 
   it("POST con datos inválidos → 400", async () => {

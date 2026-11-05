@@ -151,7 +151,9 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(async ({ where }: any) => {
         const w = where || {};
         for (const c of store.comercios) {
-          if (w.ownerId && c.ownerId === w.ownerId) return { id: c.id };
+          if (w.ownerId && c.ownerId === w.ownerId) {
+            return { id: c.id, activo: c.activo };
+          }
         }
         return null;
       }),

@@ -9,6 +9,7 @@ export type CredentialUser = {
   email: string;
   name: string;
   role: Role;
+  tokenVersion: number;
 };
 
 /**
@@ -29,7 +30,14 @@ export async function verifyCredentials(
   const { email, password } = parsed.data;
   const user = await prisma.usuario.findUnique({
     where: { email },
-    select: { id: true, email: true, nombre: true, rol: true, passwordHash: true },
+    select: {
+      id: true,
+      email: true,
+      nombre: true,
+      rol: true,
+      passwordHash: true,
+      tokenVersion: true,
+    },
   });
   if (!user?.passwordHash) return null;
 
@@ -41,5 +49,6 @@ export async function verifyCredentials(
     email: user.email,
     name: user.nombre,
     role: user.rol as Role,
+    tokenVersion: user.tokenVersion,
   };
 }

@@ -11,12 +11,6 @@ const PANEL_POR_ROL: Record<Role, string> = {
   [ROLES.ADMIN]: "/dashboard",
 };
 
-const DEMO = [
-  { rol: "Cliente", email: "cliente@obrix.local" },
-  { rol: "Comercio", email: "comercio@obrix.local" },
-  { rol: "Admin", email: "admin@obrix.local" },
-];
-
 export default function IngresarForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -111,35 +105,6 @@ export default function IngresarForm() {
           <a className="text-blue-600 hover:underline" href="/registro/comercio">
             Solicitar alta
           </a>
-        </p>
-      </div>
-
-      <div className="mt-8 rounded-lg border border-dashed border-zinc-300 p-4 text-sm dark:border-zinc-700">
-        <p className="font-medium">Cuentas de demo</p>
-        <p className="mt-1 text-zinc-500 dark:text-zinc-400">
-          Contraseña para todas: <code className="font-mono">obrix1234</code>
-        </p>
-        <ul className="mt-2 space-y-1">
-          {DEMO.map((cuenta) => (
-            <li key={cuenta.email} className="flex items-center justify-between gap-2">
-              <span className="text-zinc-600 dark:text-zinc-400">
-                {cuenta.rol}: <code className="font-mono">{cuenta.email}</code>
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail(cuenta.email);
-                  setPassword("obrix1234");
-                }}
-                className="text-blue-600 hover:underline"
-              >
-                Usar
-              </button>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
-          Solo para demo: no usar estas cuentas en producción.
         </p>
       </div>
     </main>

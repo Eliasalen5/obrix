@@ -4,6 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { authOptions } from "./options";
 import type { Role } from "./constants";
 import type { SessionUser } from "./sessionUser";
+import { prisma } from "@/lib/prisma";
 
 const SECRET = process.env.NEXTAUTH_SECRET;
 
@@ -15,8 +16,29 @@ export type TokenIdentity = {
 type JwtPayload = {
   sub?: string;
   role?: Role;
+  ver?: number;
   invalid?: boolean;
 };
+
+/**
+ * Valida el token contra la base en cada uso: usuario existente y misma
+ * `tokenVersion` (revocación global). El rol se toma de la DB, no del token,
+ * para que una pérdida de rol tenga efecto inmediato.
+ */
+async function identityFromToken(
+  token: JwtPayload | null,
+): Promise<TokenIdentity | null> {
+  if (!token || token.invalid || !token.sub) return null;
+
+  const user = await prisma.usuario.findUnique({
+    where: { id: token.sub },
+    select: { id: true, rol: true, tokenVersion: true },
+  });
+  if (!user) return null;
+  if (token.ver !== user.tokenVersion) return null;
+
+  return { userId: user.id, role: user.rol as Role };
+}
 
 /**
  * Resuelve la identidad del request aceptando DOS formas de autenticación:
@@ -41,9 +63,7 @@ export async function resolveIdentity(): Promise<TokenIdentity | null> {
         req: { headers: reqHeaders } as unknown as Parameters<typeof getToken>[0]["req"],
         secret: SECRET,
       })) as JwtPayload | null;
-      if (token?.sub && token.role && !token.invalid) {
-        return { userId: token.sub, role: token.role };
-      }
+      return identityFromToken(token);
     }
   } catch {
     // Continuar con getToken
@@ -57,10 +77,7 @@ export async function resolveIdentity(): Promise<TokenIdentity | null> {
       secret: SECRET,
     })) as JwtPayload | null;
 
-    if (!token || token.invalid) return null;
-    if (!token.sub || !token.role) return null;
-
-    return { userId: token.sub, role: token.role };
+    return identityFromToken(token);
   } catch {
     return null;
   }

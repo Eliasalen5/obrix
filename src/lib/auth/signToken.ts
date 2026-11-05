@@ -23,6 +23,7 @@ export async function signSessionToken(user: CredentialUser): Promise<SignedToke
       email: user.email,
       name: user.name,
       role: user.role,
+      ver: user.tokenVersion,
     },
   });
 

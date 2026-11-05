@@ -17,6 +17,7 @@ model Usuario {
   passwordHash String
   nombre       String
   rol          String     @default("CLIENTE") // ADMIN | COMERCIO | CLIENTE
+  tokenVersion Int        @default(0) // revoca tokens/sesiones al incrementar
   createdAt    DateTime   @default(now())
   comercio     Comercio?
   cotizaciones Cotizacion[]

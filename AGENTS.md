@@ -48,7 +48,8 @@ errores + `npm run build` OK.
 1. Autorización por rol EN CADA RUTA: `apiAuth`/`decideAccess` en API y guards de
    layout en UI. Nunca confiar solo en el front.
 2. `comercioId`/`clienteId` SIEMPRE se derivan de la sesión
-   (`getComercioIdByOwner`, `access.userId`), nunca del body/query.
+   (`requireComercioApi` → `access.comercioId`, `access.userId`), nunca del
+   body/query. `requireComercioApi` además exige que el comercio esté activo.
 3. Validar TODA entrada con Zod antes de tocar la DB. Prisma parametrizado,
    nunca SQL crudo.
 4. Contraseñas con bcryptjs. Secretos solo en `.env`; nunca en el cliente ni en

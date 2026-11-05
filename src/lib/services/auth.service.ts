@@ -51,3 +51,15 @@ export async function hasAnyUser() {
   const count = await prisma.usuario.count();
   return count > 0;
 }
+
+/**
+ * Invalida todas las sesiones/tokens emitidos para el usuario (web y mobile).
+ * Los requests siguientes fallan porque `tokenVersion` ya no coincide.
+ */
+export async function revokeUserSessions(userId: string) {
+  return prisma.usuario.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+    select: { id: true, tokenVersion: true },
+  });
+}

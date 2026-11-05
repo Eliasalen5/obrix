@@ -9,6 +9,8 @@ export type HttpConfig = {
   baseUrl: string;
   /** Headers por defecto en cada request (p. ej. `Authorization: Bearer`). */
   headers: Record<string, string>;
+  /** Se invoca cuando el servidor responde 401 (sesión/token revocado). */
+  onUnauthorized?: () => void;
 };
 
 let httpConfig: HttpConfig = { baseUrl: "", headers: {} };
@@ -22,6 +24,7 @@ export function configureHttp(config: Partial<HttpConfig>): void {
   httpConfig = {
     baseUrl: config.baseUrl ?? httpConfig.baseUrl,
     headers: config.headers ?? httpConfig.headers,
+    onUnauthorized: config.onUnauthorized ?? httpConfig.onUnauthorized,
   };
 }
 
@@ -76,6 +79,7 @@ export async function request<T>(
   }
 
   if (!res.ok) {
+    if (res.status === 401) httpConfig.onUnauthorized?.();
     const err = body as { error?: string; details?: ApiErrorDetail[] } | null;
     // Si el server devolvió HTML/texto (p.ej. 502 de un proxy), no perdemos
     // el status: mostramos un mensaje acorde en vez de "Error inesperado".

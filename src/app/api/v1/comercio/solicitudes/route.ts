@@ -1,14 +1,11 @@
 import type { NextRequest } from "next/server";
 import { requireComercioApi } from "@/lib/auth/apiAuth";
 import { jsonError, prismaErrorResponse, zodDetails } from "@/lib/api/http";
-import { getComercioIdByOwner } from "@/lib/services/comercio.service";
 import { SolicitudError, solicitudService } from "@/lib/services/solicitud.service";
 import {
   crearSolicitudSchema,
   ESTADOS_SOLICITUD_LISTA,
 } from "@/lib/validators/solicitud";
-
-const SIN_COMERCIO = "El usuario no tiene un comercio asociado";
 
 function errorResponse(error: unknown) {
   if (error instanceof SolicitudError) {
@@ -29,11 +26,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const comercioId = await getComercioIdByOwner(access.userId);
-    if (!comercioId) return jsonError(403, SIN_COMERCIO);
-
     const data = await solicitudService.listarPorComercio(
-      comercioId,
+      access.comercioId,
       estado || undefined,
     );
     return Response.json({ data });
@@ -58,11 +52,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const comercioId = await getComercioIdByOwner(access.userId);
-    if (!comercioId) return jsonError(403, SIN_COMERCIO);
-
     const { solicitud, posiblesDuplicados } = await solicitudService.crear(
-      comercioId,
+      access.comercioId,
       parsed.data.propuesta,
     );
     return Response.json(

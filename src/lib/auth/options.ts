@@ -28,14 +28,17 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as SessionUser).role ?? ROLES.CLIENTE;
         token.name = user.name;
         token.email = user.email;
+        (token as { ver?: number }).ver =
+          (user as SessionUser & { tokenVersion?: number }).tokenVersion ?? 0;
       } else if (token.email) {
-        // Revalida contra la DB en cada request: refresca rol/nombre y detecta
-        // usuarios eliminados o desactivados para revocar su sesión activa.
+        // Revalida contra la DB en cada request: refresca rol/nombre, detecta
+        // usuarios eliminados y tokens revocados (tokenVersion).
         const u = await prisma.usuario.findUnique({
           where: { email: token.email },
-          select: { rol: true, nombre: true },
+          select: { rol: true, nombre: true, tokenVersion: true },
         });
-        if (!u) {
+        const ver = (token as { ver?: number }).ver;
+        if (!u || ver !== u.tokenVersion) {
           token.invalid = true;
         } else {
           token.invalid = false;

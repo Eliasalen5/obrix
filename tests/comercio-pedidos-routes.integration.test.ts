@@ -37,7 +37,12 @@ const BASE = "http://localhost/api/v1/comercio/pedidos";
 
 function conComercio() {
   sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
-  db.comercio.findUnique.mockResolvedValue({ id: "com1" });
+  db.comercio.findUnique.mockResolvedValue({ id: "com1", activo: true });
+}
+
+function conComercioInactivo() {
+  sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
+  db.comercio.findUnique.mockResolvedValue({ id: "com1", activo: false });
 }
 
 function conRol(role: Role) {
@@ -92,6 +97,24 @@ describe("comercio — pedidos: autorización", () => {
     const res = await pedidos.GET();
     expect(res.status).toBe(403);
     expect(db.pedido.findMany).not.toHaveBeenCalled();
+  });
+
+  it("COMERCIO inactivo no puede listar pedidos → 403", async () => {
+    conComercioInactivo();
+    const res = await pedidos.GET();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "Comercio inactivo" });
+    expect(db.pedido.findMany).not.toHaveBeenCalled();
+  });
+
+  it("COMERCIO inactivo no puede cambiar el estado de un pedido → 403", async () => {
+    conComercioInactivo();
+    const res = await pedidoById.PATCH(
+      jsonReq(BASE, "PATCH", { estado: "CONFIRMADO" }),
+      ctx("ped1"),
+    );
+    expect(res.status).toBe(403);
+    expect(db.pedido.updateMany).not.toHaveBeenCalled();
   });
 });
 

@@ -9,6 +9,7 @@ import {
   OFERTAS_ALLOWED_ROLES,
 } from "./access";
 import type { Role } from "./constants";
+import { getComercioByOwner } from "@/lib/services/comercio.service";
 
 export type AdminAccess =
   | { ok: true; userId?: string; role: Role }
@@ -18,7 +19,9 @@ export type AuthenticatedAccess =
   | { ok: true; userId: string; role: Role }
   | { ok: false; status: 401 | 403; error: string };
 
-export type ComercioAccess = AuthenticatedAccess;
+export type ComercioAccess =
+  | { ok: true; userId: string; role: Role; comercioId: string }
+  | { ok: false; status: 401 | 403; error: string };
 
 /**
  * Rol del usuario para UI que corre en el servidor (server components). Se lee
@@ -51,8 +54,24 @@ export async function requireAdminApi(): Promise<AdminAccess> {
   return { ok: true, userId: identity?.userId, role: decision.role };
 }
 
-export async function requireComercioApi(): Promise<AuthenticatedAccess> {
-  return requireAuthenticatedApi(OFERTAS_ALLOWED_ROLES);
+export async function requireComercioApi(): Promise<ComercioAccess> {
+  const access = await requireAuthenticatedApi(OFERTAS_ALLOWED_ROLES);
+  if (!access.ok) return access;
+
+  const comercio = await getComercioByOwner(access.userId);
+
+  if (!comercio) {
+    return {
+      ok: false,
+      status: 403,
+      error: "El usuario no tiene un comercio asociado",
+    };
+  }
+  if (!comercio.activo) {
+    return { ok: false, status: 403, error: "Comercio inactivo" };
+  }
+
+  return { ...access, comercioId: comercio.id };
 }
 
 export async function requireAsistenteApi(): Promise<AuthenticatedAccess> {

@@ -64,7 +64,12 @@ const OFERTA = {
 
 function withComercio() {
   sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
-  db.comercio.findUnique.mockResolvedValue({ id: "com1" });
+  db.comercio.findUnique.mockResolvedValue({ id: "com1", activo: true });
+}
+
+function withComercioInactivo() {
+  sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
+  db.comercio.findUnique.mockResolvedValue({ id: "com1", activo: false });
 }
 
 function withRoleNoComercio(role: Role) {
@@ -132,6 +137,36 @@ describe("comercio — autenticación y autorización", () => {
       error: "El usuario no tiene un comercio asociado",
     });
     expect(db.oferta.findMany).not.toHaveBeenCalled();
+  });
+
+  it("COMERCIO inactivo no puede listar ofertas → 403", async () => {
+    withComercioInactivo();
+    const res = await ofertas.GET();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "Comercio inactivo" });
+    expect(db.oferta.findMany).not.toHaveBeenCalled();
+  });
+
+  it("COMERCIO inactivo no puede crear ofertas → 403", async () => {
+    withComercioInactivo();
+    const res = await ofertas.POST(
+      jsonReq(OF_BASE, "POST", { productoId: "p1", precio: 100 }),
+    );
+    expect(res.status).toBe(403);
+    expect(db.oferta.upsert).not.toHaveBeenCalled();
+  });
+
+  it("COMERCIO inactivo no puede modificar ni borrar ofertas → 403", async () => {
+    withComercioInactivo();
+    const patch = await ofertaById.PATCH(
+      jsonReq(OF_BASE, "PATCH", { precio: 250 }),
+      ctx("o1"),
+    );
+    const del = await ofertaById.DELETE(req(OF_BASE), ctx("o1"));
+    expect(patch.status).toBe(403);
+    expect(del.status).toBe(403);
+    expect(db.oferta.updateMany).not.toHaveBeenCalled();
+    expect(db.oferta.deleteMany).not.toHaveBeenCalled();
   });
 });
 

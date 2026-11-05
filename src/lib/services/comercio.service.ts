@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getComercioIdByOwner(
+export type ComercioEstado = { id: string; activo: boolean };
+
+export async function getComercioByOwner(
   userId: string,
-): Promise<string | null> {
+): Promise<ComercioEstado | null> {
   const comercio = await prisma.comercio.findUnique({
     where: { ownerId: userId },
-    select: { id: true },
+    select: { id: true, activo: true },
   });
-  return comercio?.id ?? null;
+  return comercio ?? null;
 }

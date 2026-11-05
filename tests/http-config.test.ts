@@ -72,6 +72,22 @@ describe("request — transporte configurable (base URL + headers)", () => {
     expect(headers["content-type"]).toBe("application/json");
     expect(headers.authorization).toBe("Bearer t");
   });
+
+  it("invoca onUnauthorized cuando el servidor responde 401", async () => {
+    const onUnauthorized = vi.fn();
+    configureHttp({ onUnauthorized });
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: "No autenticado" }),
+    });
+
+    const res = await request("/api/v1/pedidos");
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.status).toBe(401);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("authApi.login — emisión de token mobile", () => {

@@ -4,6 +4,7 @@ import {
   clearSession,
   loadSession,
   login as loginSession,
+  onSessionExpired,
   type Session,
 } from "./session";
 
@@ -21,10 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
+    onSessionExpired(() => setSession(null));
     loadSession().then((s) => {
       setSession(s);
       setReady(true);
     });
+    return () => onSessionExpired(null);
   }, []);
 
   async function login(email: string, password: string) {

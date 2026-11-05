@@ -11,6 +11,18 @@ export type Session = {
   user: AuthUser;
 };
 
+let sessionExpiredHandler: (() => void) | null = null;
+
+/** Registra el callback que actualiza la UI cuando el token fue revocado. */
+export function onSessionExpired(handler: (() => void) | null): void {
+  sessionExpiredHandler = handler;
+}
+
+async function handleUnauthorized(): Promise<void> {
+  await clearSession();
+  sessionExpiredHandler?.();
+}
+
 /**
  * Configura el transporte HTTP global para que TODOS los clientes de
  * `@shared/api/*` (asistente, cotización, etc.) apunten a la URL absoluta del
@@ -20,6 +32,9 @@ export function configureApi(token: string | null): void {
   configureHttp({
     baseUrl: API_URL,
     headers: token ? { authorization: `Bearer ${token}` } : {},
+    onUnauthorized: () => {
+      void handleUnauthorized();
+    },
   });
 }
 

@@ -2,12 +2,9 @@ import type { NextRequest } from "next/server";
 import { requireComercioApi } from "@/lib/auth/apiAuth";
 import { jsonError, prismaErrorResponse, zodDetails } from "@/lib/api/http";
 import { actualizarEstadoPedidoSchema } from "@/lib/validators/pedido";
-import { getComercioIdByOwner } from "@/lib/services/comercio.service";
 import { pedidoService } from "@/lib/services/pedido.service";
 
 type Context = { params: Promise<{ id: string }> };
-
-const SIN_COMERCIO = "El usuario no tiene un comercio asociado";
 
 export async function GET(_request: NextRequest, { params }: Context) {
   const access = await requireComercioApi();
@@ -15,10 +12,7 @@ export async function GET(_request: NextRequest, { params }: Context) {
 
   const { id } = await params;
   try {
-    const comercioId = await getComercioIdByOwner(access.userId);
-    if (!comercioId) return jsonError(403, SIN_COMERCIO);
-
-    const data = await pedidoService.obtenerComercio(comercioId, id);
+    const data = await pedidoService.obtenerComercio(access.comercioId, id);
     if (!data) return jsonError(404, "Recurso no encontrado");
     return Response.json({ data });
   } catch (error) {
@@ -38,11 +32,8 @@ export async function PATCH(request: NextRequest, { params }: Context) {
   }
 
   try {
-    const comercioId = await getComercioIdByOwner(access.userId);
-    if (!comercioId) return jsonError(403, SIN_COMERCIO);
-
     const result = await pedidoService.cambiarEstadoComercio(
-      comercioId,
+      access.comercioId,
       id,
       parsed.data.estado,
     );

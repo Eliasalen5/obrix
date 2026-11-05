@@ -2,12 +2,9 @@ import type { NextRequest } from "next/server";
 import { requireComercioApi } from "@/lib/auth/apiAuth";
 import { jsonError, prismaErrorResponse, zodDetails } from "@/lib/api/http";
 import { updateOfertaSchema } from "@/lib/validators/oferta";
-import { getComercioIdByOwner } from "@/lib/services/comercio.service";
 import { ofertaService } from "@/lib/services/oferta.service";
 
 type Context = { params: Promise<{ id: string }> };
-
-const SIN_COMERCIO = "El usuario no tiene un comercio asociado";
 
 export async function GET(_request: NextRequest, { params }: Context) {
   const access = await requireComercioApi();
@@ -15,10 +12,7 @@ export async function GET(_request: NextRequest, { params }: Context) {
 
   const { id } = await params;
   try {
-    const comercioId = await getComercioIdByOwner(access.userId);
-    if (!comercioId) return jsonError(403, SIN_COMERCIO);
-
-    const data = await ofertaService.getForComercio(comercioId, id);
+    const data = await ofertaService.getForComercio(access.comercioId, id);
     if (!data) return jsonError(404, "Recurso no encontrado");
     return Response.json({ data });
   } catch (error) {
@@ -41,17 +35,14 @@ export async function PATCH(request: NextRequest, { params }: Context) {
   }
 
   try {
-    const comercioId = await getComercioIdByOwner(access.userId);
-    if (!comercioId) return jsonError(403, SIN_COMERCIO);
-
     const result = await ofertaService.updateForComercio(
-      comercioId,
+      access.comercioId,
       id,
       parsed.data,
     );
     if (result.count === 0) return jsonError(404, "Recurso no encontrado");
 
-    const data = await ofertaService.getForComercio(comercioId, id);
+    const data = await ofertaService.getForComercio(access.comercioId, id);
     return Response.json({ data });
   } catch (error) {
     return prismaErrorResponse(error);
@@ -64,10 +55,7 @@ export async function DELETE(_request: NextRequest, { params }: Context) {
 
   const { id } = await params;
   try {
-    const comercioId = await getComercioIdByOwner(access.userId);
-    if (!comercioId) return jsonError(403, SIN_COMERCIO);
-
-    const result = await ofertaService.removeForComercio(comercioId, id);
+    const result = await ofertaService.removeForComercio(access.comercioId, id);
     if (result.count === 0) return jsonError(404, "Recurso no encontrado");
     return new Response(null, { status: 204 });
   } catch (error) {
