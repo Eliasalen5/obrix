@@ -31,19 +31,9 @@ const CATEGORIAS = [
     img: "/sanitarios-plomeria.jpg",
   },
   {
-    nombre: "Casas de pesca y náutica",
-    slug: "pesca",
-    img: "/pesca-nautica.jpg",
-  },
-  {
     nombre: "Madereras y carpintería",
     slug: "madereras",
     img: "/madera-carpinteria.jpg",
-  },
-  {
-    nombre: "Jardinería, viveros y riego",
-    slug: "jardineria",
-    img: "/plomeria.jpg",
   },
   {
     nombre: "Cerámicas, pisos y revestimientos",
@@ -56,34 +46,14 @@ const CATEGORIAS = [
     img: "/hierro.jpg",
   },
   {
-    nombre: "Refrigeración y climatización",
-    slug: "refrigeracion",
-    img: "/electricidad.jpg",
-  },
-  {
-    nombre: "Seguridad y cerrajería",
-    slug: "seguridad",
-    img: "/herramientas.jpg",
-  },
-  {
-    nombre: "Piscinas",
-    slug: "piscinas",
-    img: "/plomeria.jpg",
-  },
-  {
-    nombre: "Máquinas, herramientas y equipos",
-    slug: "maquinas",
-    img: "/herramientas.jpg",
-  },
-  {
     nombre: "Vidrierías",
     slug: "vidrierias",
     img: "/vidrierias.jpg",
   },
   {
-    nombre: "Repuestos de autos",
-    slug: "repuestos-autos",
-    img: "/repuestos-autos.jpg",
+    nombre: "Máquinas, herramientas y equipos",
+    slug: "maquinas",
+    img: "/herramientas.jpg",
   },
 ];
 
@@ -100,8 +70,9 @@ export default function CategoriasDestacadas() {
     }
   };
 
-  const firstRow = CATEGORIAS.slice(0, 8);
-  const secondRow = CATEGORIAS.slice(8, 16);
+  const mitad = Math.ceil(CATEGORIAS.length / 2);
+  const firstRow = CATEGORIAS.slice(0, mitad);
+  const secondRow = CATEGORIAS.slice(mitad);
 
   return (
     <section id="categorias" className="mx-auto w-full max-w-6xl px-4 py-12">

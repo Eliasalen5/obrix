@@ -14,19 +14,15 @@ const CATEGORIAS_ESPERADAS = [
   "Pinturerías",
   "Casas de electricidad",
   "Sanitarios, plomería y gas",
-  "Casas de pesca y náutica",
   "Madereras y carpintería",
-  "Jardinería, viveros y riego",
   "Cerámicas, pisos y revestimientos",
   "Techos y zinguería",
-  "Refrigeración y climatización",
-  "Seguridad y cerrajería",
-  "Piscinas",
+  "Vidrierías",
   "Máquinas, herramientas y equipos",
 ];
 
 describe("catálogo semilla: categorías", () => {
-  it("tiene exactamente las 14 categorías del acuerdo, en orden", () => {
+  it("tiene exactamente las 10 categorías del acuerdo, en orden", () => {
     expect(categorias.map((c) => c.nombre)).toEqual(CATEGORIAS_ESPERADAS);
     expect(categorias.map((c) => c.orden)).toEqual(
       CATEGORIAS_ESPERADAS.map((_, i) => i + 1),

@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { categorias } from "../prisma/catalogo.seed-data";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -16,8 +17,17 @@ function normalizar(s: string): string {
 async function main() {
   console.log("Leyendo JSON:", JSON_PATH);
   const raw = fs.readFileSync(JSON_PATH, "utf-8");
-  const items: Array<{ sku: string; nombre: string; unidad: string; categoria: string; descripcion: string }> = JSON.parse(raw);
-  
+  const itemsRaw: Array<{ sku: string; nombre: string; unidad: string; categoria: string; descripcion: string }> = JSON.parse(raw);
+  const permitidas = new Set(categorias.map((c) => c.nombre));
+  const items = itemsRaw.filter((i) => permitidas.has(i.categoria));
+  const descartados = itemsRaw.filter((i) => !permitidas.has(i.categoria));
+
+  if (descartados.length > 0) {
+    console.warn(
+      `Descartados ${descartados.length} productos con categorías fuera del catálogo de construcción.`,
+    );
+  }
+
   console.log(`Productos a importar: ${items.length}`);
   
   // Asegurar categorías

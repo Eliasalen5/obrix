@@ -34,15 +34,11 @@ export const categorias: CategoriaSeed[] = [
   { nombre: "Pinturerías", orden: 3 },
   { nombre: "Casas de electricidad", orden: 4 },
   { nombre: "Sanitarios, plomería y gas", orden: 5 },
-  { nombre: "Casas de pesca y náutica", orden: 6 },
-  { nombre: "Madereras y carpintería", orden: 7 },
-  { nombre: "Jardinería, viveros y riego", orden: 8 },
-  { nombre: "Cerámicas, pisos y revestimientos", orden: 9 },
-  { nombre: "Techos y zinguería", orden: 10 },
-  { nombre: "Refrigeración y climatización", orden: 11 },
-  { nombre: "Seguridad y cerrajería", orden: 12 },
-  { nombre: "Piscinas", orden: 13 },
-  { nombre: "Máquinas, herramientas y equipos", orden: 14 },
+  { nombre: "Madereras y carpintería", orden: 6 },
+  { nombre: "Cerámicas, pisos y revestimientos", orden: 7 },
+  { nombre: "Techos y zinguería", orden: 8 },
+  { nombre: "Vidrierías", orden: 9 },
+  { nombre: "Máquinas, herramientas y equipos", orden: 10 },
 ];
 
 export const productosBase: ProductoSeed[] = [];
