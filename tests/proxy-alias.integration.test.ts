@@ -7,8 +7,19 @@ function req(url: string) {
 }
 
 describe("proxy — alias legacy /api/* → /api/v1/*", () => {
-  it("matcher excluye /api/v1 y /api/auth", () => {
-    expect(config.matcher).toEqual(["/api/((?!v1/|auth/).*)"]);
+  it("matcher excluye /api/v1 y /api/auth y cubre /cliente", () => {
+    expect(config.matcher).toEqual([
+      "/api/((?!v1/|auth/).*)",
+      "/cliente/:path*",
+    ]);
+  });
+
+  it("expone la ruta original de /cliente en un header interno", () => {
+    const res = proxy(req("http://localhost/cliente/proyecto?auto=1"));
+
+    expect(res.headers.get("x-middleware-request-x-obrix-pathname")).toBe(
+      "/cliente/proyecto?auto=1",
+    );
   });
 
   it("reescribe /api/pedidos → /api/v1/pedidos y marca deprecación", () => {

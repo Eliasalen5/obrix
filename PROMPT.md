@@ -155,7 +155,9 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
   `Producto.busqueda` (texto normalizado) e índice por `categoriaId`. La UI de
   ofertas usa debounce + `AbortController` y ya no filtra todo el catálogo en
   memoria. Backfill: `npm run db:backfill-busqueda`.
-- **Verificación:** `npm test` 369/369 (43 archivos), `tsc --noEmit` 0 errores,
+- **Home (UX):** el hero permite describir el proyecto, guarda el texto para
+  sobrevivir login/registro y abre el asistente con cálculo automático.
+- **Verificación:** `npm test` 378/378 (45 archivos), `tsc --noEmit` 0 errores,
   `next build` OK.
 - **Deploy:** web en Vercel sobre Prisma Postgres.
 

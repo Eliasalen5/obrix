@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { asistenteApi, type AsistenteResponse } from "@/lib/api/asistenteClient";
+import { consumirProyectoPendiente } from "@/lib/proyecto/pendiente";
 import {
   cotizacionApi,
   type ComercioComparado,
@@ -38,10 +39,10 @@ export default function ProyectoWizard() {
   const [cotizacion, setCotizacion] = useState<CotizacionResponse | null>(null);
   const [pedido, setPedido] = useState<Pedido | null>(null);
 
-  const estimar = useCallback(async () => {
+  const estimar = useCallback(async (texto?: string) => {
     setMensaje(null);
     setOcupado(true);
-    const res = await asistenteApi.estimar(descripcion);
+    const res = await asistenteApi.estimar((texto ?? descripcion).trim());
     setOcupado(false);
     if (!res.ok) {
       setMensaje({
@@ -62,6 +63,15 @@ export default function ProyectoWizard() {
     );
     setPaso("materiales");
   }, [descripcion]);
+
+  useEffect(() => {
+    const pendiente = consumirProyectoPendiente();
+    if (!pendiente) return;
+    setDescripcion(pendiente.descripcion);
+    if (pendiente.autoEstimar) {
+      void estimar(pendiente.descripcion);
+    }
+  }, [estimar]);
 
   const cotizar = useCallback(async () => {
     setMensaje(null);

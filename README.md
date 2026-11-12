@@ -125,5 +125,5 @@ Contraseña: valor de `SEED_DEMO_PASSWORD` (por defecto `obrix1234`).
 - **En progreso/parcial:**
   - **Fase 14:** Cámara/código de barras (pendiente, requiere endpoint de búsqueda por `codigoBarras`) y push (diferido a development build; Expo Go iOS no soporta push).
   - **Fase 15:** Hardening y escalabilidad. Falta **rate limit con store compartido** (Redis/Upstash) detrás de `RateLimitStore` para entornos serverless/multi-instancia.
-- **Verificación:** `npm test` 369/369 (43 archivos), `npx tsc --noEmit` 0 errores, `next build` OK.
+- **Verificación:** `npm test` 378/378 (45 archivos), `npx tsc --noEmit` 0 errores, `next build` OK.
 - **Seguridad:** `npm audit` reporta 0 vulnerabilidades.

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSession, signIn } from "next-auth/react";
 import { ROLES, type Role } from "@/lib/auth/constants";
+import { agregarCallbackUrl, resolverCallbackUrl } from "@/lib/auth/callback";
 
 const PANEL_POR_ROL: Record<Role, string> = {
   [ROLES.CLIENTE]: "/cliente",
@@ -14,7 +15,10 @@ const PANEL_POR_ROL: Record<Role, string> = {
 export default function IngresarForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = resolverCallbackUrl(
+    searchParams.get("callbackUrl"),
+    "",
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,7 +44,11 @@ export default function IngresarForm() {
 
     const session = await getSession();
     const role = (session?.user as { role?: Role } | undefined)?.role;
-    const destino = callbackUrl ?? (role ? PANEL_POR_ROL[role] : "/");
+    const panel = role ? PANEL_POR_ROL[role] : null;
+    const callbackValido =
+      callbackUrl &&
+      (!panel || callbackUrl === panel || callbackUrl.startsWith(`${panel}/`));
+    const destino = callbackValido ? callbackUrl : (panel ?? "/");
     router.push(destino);
     router.refresh();
   }
@@ -97,7 +105,10 @@ export default function IngresarForm() {
       <div className="mt-6 flex flex-col gap-2 text-center text-sm text-zinc-600 dark:text-zinc-400">
         <p>
           ¿No tenés cuenta?{" "}
-          <a className="text-blue-600 hover:underline" href="/registro/cliente">
+          <a
+            className="text-blue-600 hover:underline"
+            href={agregarCallbackUrl("/registro/cliente", callbackUrl)}
+          >
             Crear cuenta cliente
           </a>
         </p>
