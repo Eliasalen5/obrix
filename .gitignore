@@ -50,3 +50,7 @@ next-env.d.ts
 /*.db
 /prisma/dev.db
 /prisma/*.db
+
+# catálogo (datos intermedios/fuente)
+/data/catalogo/catalogo-extraido.json
+/data/catalogo/*.xlsx

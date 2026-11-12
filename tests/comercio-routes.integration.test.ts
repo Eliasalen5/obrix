@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ROLES, type Role } from "@/lib/auth/constants";
 
 import * as catalogo from "@/app/api/v1/comercio/catalogo/route";
+import * as categorias from "@/app/api/v1/comercio/catalogo/categorias/route";
 import * as ofertas from "@/app/api/v1/comercio/ofertas/route";
 import * as ofertaById from "@/app/api/v1/comercio/ofertas/[id]/route";
 
@@ -15,7 +16,7 @@ vi.mock("@/lib/auth/token", () => ({
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     categoria: { findMany: vi.fn() },
-    producto: { findMany: vi.fn(), findUnique: vi.fn() },
+    producto: { findMany: vi.fn(), findUnique: vi.fn(), count: vi.fn() },
     comercio: { findUnique: vi.fn() },
     oferta: {
       findMany: vi.fn(),
@@ -29,7 +30,7 @@ vi.mock("@/lib/prisma", () => ({
 
 type DbMock = {
   categoria: Record<"findMany", Mock>;
-  producto: Record<"findMany" | "findUnique", Mock>;
+  producto: Record<"findMany" | "findUnique" | "count", Mock>;
   comercio: Record<"findUnique", Mock>;
   oferta: Record<
     "findMany" | "findFirst" | "upsert" | "updateMany" | "deleteMany",
@@ -171,12 +172,33 @@ describe("comercio — autenticación y autorización", () => {
 });
 
 describe("comercio — catálogo maestro (solo lectura)", () => {
-  it("GET catálogo con COMERCIO → 200 con productos", async () => {
+  it("GET catálogo con COMERCIO → 200 con productos paginados", async () => {
     withComercio();
     db.producto.findMany.mockResolvedValue([PRODUCTO]);
+    db.producto.count.mockResolvedValue(1);
     const res = await catalogo.GET(req("http://localhost/api/comercio/catalogo"));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ data: [PRODUCTO] });
+    expect(await res.json()).toEqual({
+      data: { productos: [PRODUCTO], total: 1, limit: 50, offset: 0 },
+    });
+  });
+
+  it("GET catálogo con limit inválido → 400", async () => {
+    withComercio();
+    const res = await catalogo.GET(
+      req("http://localhost/api/comercio/catalogo?limit=0"),
+    );
+    expect(res.status).toBe(400);
+    expect(db.producto.findMany).not.toHaveBeenCalled();
+  });
+
+  it("GET categorías con COMERCIO → 200", async () => {
+    withComercio();
+    const categoria = { id: "c1", nombre: "CEMENTO_Y_CAL", orden: 1 };
+    db.categoria.findMany.mockResolvedValue([categoria]);
+    const res = await categorias.GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ data: [categoria] });
   });
 });
 

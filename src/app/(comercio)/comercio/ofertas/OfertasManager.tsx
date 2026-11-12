@@ -22,7 +22,7 @@ import {
   propuestaProductoSchema,
   type PropuestaProductoInput,
 } from "@/lib/validators/solicitud";
-import { normalizarTexto } from "@/lib/services/cotizador.service";
+import { normalizarTexto } from "@/lib/text/busqueda";
 
 type Mensaje = { tipo: "ok" | "error" | "aviso"; texto: string };
 
@@ -84,14 +84,21 @@ function aNumero(valor: string): number {
   return Number(valor);
 }
 
+const PAGE_SIZE = 50;
+
 export default function OfertasManager() {
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [totalProductos, setTotalProductos] = useState(0);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [ofertas, setOfertas] = useState<Oferta[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudProducto[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [cargandoCatalogo, setCargandoCatalogo] = useState(true);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const [busqueda, setBusqueda] = useState("");
+  const [busquedaDebounced, setBusquedaDebounced] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [offset, setOffset] = useState(0);
   const [busquedaOfertas, setBusquedaOfertas] = useState("");
 
   const [altaId, setAltaId] = useState<string | null>(null);
@@ -104,25 +111,68 @@ export default function OfertasManager() {
   const [propuesta, setPropuesta] = useState<PropuestaForm>(PROPUESTA_VACIA);
   const [enviandoPropuesta, setEnviandoPropuesta] = useState(false);
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    const [cat, ofs, sols] = await Promise.all([
-      ofertaApi.listCatalogo(),
-      ofertaApi.listOfertas(),
-      solicitudComercioApi.listSolicitudes(),
-    ]);
-    if (cat.ok) setProductos(cat.data);
-    else setMensaje({ tipo: "error", texto: cat.error });
-    if (ofs.ok) setOfertas(ofs.data);
-    else setMensaje({ tipo: "error", texto: ofs.error });
-    if (sols.ok) setSolicitudes(sols.data);
-    else setMensaje({ tipo: "error", texto: sols.error });
-    setCargando(false);
+  const cargarOfertas = useCallback(async () => {
+    const res = await ofertaApi.listOfertas();
+    if (res.ok) setOfertas(res.data);
+    else setMensaje({ tipo: "error", texto: res.error });
   }, []);
 
+  const cargarSolicitudes = useCallback(async () => {
+    const res = await solicitudComercioApi.listSolicitudes();
+    if (res.ok) setSolicitudes(res.data);
+    else setMensaje({ tipo: "error", texto: res.error });
+  }, []);
+
+  const cargarCategorias = useCallback(async () => {
+    const res = await ofertaApi.listCategorias();
+    if (res.ok) setCategorias(res.data);
+    else setMensaje({ tipo: "error", texto: res.error });
+  }, []);
+
+  const cargarCatalogo = useCallback(
+    async (signal?: AbortSignal) => {
+      setCargandoCatalogo(true);
+      const res = await ofertaApi.listCatalogo({
+        q: busquedaDebounced,
+        categoriaId: filtroCategoria,
+        limit: PAGE_SIZE,
+        offset,
+        signal,
+      });
+      if (signal?.aborted) return;
+      if (res.ok) {
+        setProductos(res.data.productos);
+        setTotalProductos(res.data.total);
+      } else if (res.status !== 0) {
+        setMensaje({ tipo: "error", texto: res.error });
+      }
+      setCargandoCatalogo(false);
+    },
+    [busquedaDebounced, filtroCategoria, offset],
+  );
+
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    const timer = setTimeout(() => setBusquedaDebounced(busqueda.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [busqueda]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void cargarCatalogo(controller.signal);
+    return () => controller.abort();
+  }, [cargarCatalogo]);
+
+  useEffect(() => {
+    void Promise.all([
+      cargarOfertas(),
+      cargarSolicitudes(),
+      cargarCategorias(),
+    ]).finally(() => setCargando(false));
+  }, [cargarOfertas, cargarSolicitudes, cargarCategorias]);
+
+  const recargar = useCallback(async () => {
+    await Promise.all([cargarOfertas(), cargarSolicitudes()]);
+  }, [cargarOfertas, cargarSolicitudes]);
 
   const ofertaPorProducto = useMemo(() => {
     const mapa = new Map<string, Oferta>();
@@ -130,28 +180,7 @@ export default function OfertasManager() {
     return mapa;
   }, [ofertas]);
 
-  const productosVisibles = useMemo(() => {
-    const q = normalizarTexto(busqueda);
-    return productos.filter((p) => {
-      if (filtroCategoria && p.categoriaId !== filtroCategoria) return false;
-      if (q === "") return true;
-      return normalizarTexto(
-        `${p.sku} ${p.nombre} ${p.unidad} ${p.descripcion} ${p.marca ?? ""}`,
-      ).includes(q);
-    });
-  }, [productos, busqueda, filtroCategoria]);
-
   const hayFiltroCatalogo = busqueda.trim() !== "" || filtroCategoria !== "";
-
-  const categoriasVisibles = useMemo(() => {
-    const mapa = new Map<string, Categoria>();
-    for (const p of productos) {
-      if (p.categoria) mapa.set(p.categoria.id, p.categoria);
-    }
-    return [...mapa.values()].sort(
-      (a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre),
-    );
-  }, [productos]);
 
   const ofertasVisibles = useMemo(() => {
     const q = normalizarTexto(busquedaOfertas);
@@ -168,7 +197,7 @@ export default function OfertasManager() {
       const res = await promesa;
       if (res.ok) {
         setMensaje({ tipo: "ok", texto: exito });
-        await cargar();
+        await recargar();
         return true;
       }
       setMensaje({
@@ -179,7 +208,7 @@ export default function OfertasManager() {
       });
       return false;
     },
-    [cargar],
+    [recargar],
   );
 
   const activar = useCallback(
@@ -296,8 +325,8 @@ export default function OfertasManager() {
     });
     setPropuestaAbierta(false);
     setPropuesta(PROPUESTA_VACIA);
-    await cargar();
-  }, [propuesta, cargar]);
+    await recargar();
+  }, [propuesta, recargar]);
 
   return (
     <div className="mt-4 space-y-6">
@@ -441,7 +470,7 @@ export default function OfertasManager() {
       <section>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-medium">
-            Catálogo maestro ({productos.length})
+            Catálogo maestro ({totalProductos})
           </h2>
           <button
             type="button"
@@ -456,22 +485,28 @@ export default function OfertasManager() {
             className={`${inputCls} min-w-56`}
             placeholder="Buscar por nombre, SKU, marca o unidad"
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => {
+              setBusqueda(e.target.value);
+              setOffset(0);
+            }}
           />
           <select
             className={inputCls}
             value={filtroCategoria}
-            onChange={(e) => setFiltroCategoria(e.target.value)}
+            onChange={(e) => {
+              setFiltroCategoria(e.target.value);
+              setOffset(0);
+            }}
           >
             <option value="">Todas las categorías</option>
-            {categoriasVisibles.map((c) => (
+            {categorias.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
               </option>
             ))}
           </select>
           <span className="text-sm text-gray-500">
-            Mostrando {productosVisibles.length} de {productos.length}
+            Mostrando {productos.length} de {totalProductos}
           </span>
           {hayFiltroCatalogo && (
             <button
@@ -479,6 +514,7 @@ export default function OfertasManager() {
               onClick={() => {
                 setBusqueda("");
                 setFiltroCategoria("");
+                setOffset(0);
               }}
               className="text-sm text-blue-600 hover:underline"
             >
@@ -496,7 +532,7 @@ export default function OfertasManager() {
             </tr>
           </thead>
           <tbody>
-            {productosVisibles.map((p) => {
+            {productos.map((p) => {
               const yaActivado = ofertaPorProducto.has(p.id);
               return altaId === p.id ? (
                 <tr key={p.id} className="border-b">
@@ -571,7 +607,7 @@ export default function OfertasManager() {
                 </tr>
               );
             })}
-            {productosVisibles.length === 0 && (
+            {productos.length === 0 && !cargandoCatalogo && (
               <tr>
                 <td colSpan={4} className="py-2 text-gray-500">
                   {hayFiltroCatalogo ? (
@@ -593,6 +629,32 @@ export default function OfertasManager() {
             )}
           </tbody>
         </table>
+
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+          <button
+            type="button"
+            disabled={offset === 0 || cargandoCatalogo}
+            onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+            className="rounded border border-zinc-300 px-2 py-1 disabled:opacity-40 dark:border-zinc-700"
+          >
+            Anterior
+          </button>
+          <span className="text-gray-500">
+            Página {Math.floor(offset / PAGE_SIZE) + 1} de{" "}
+            {Math.max(1, Math.ceil(totalProductos / PAGE_SIZE))}
+          </span>
+          <button
+            type="button"
+            disabled={offset + PAGE_SIZE >= totalProductos || cargandoCatalogo}
+            onClick={() => setOffset(offset + PAGE_SIZE)}
+            className="rounded border border-zinc-300 px-2 py-1 disabled:opacity-40 dark:border-zinc-700"
+          >
+            Siguiente
+          </button>
+          {cargandoCatalogo && (
+            <span className="text-gray-500">Cargando catálogo…</span>
+          )}
+        </div>
 
         {propuestaAbierta && (
           <div className="mt-4 rounded border border-zinc-300 p-4 dark:border-zinc-700">
@@ -622,7 +684,7 @@ export default function OfertasManager() {
                   }
                 >
                   <option value="">Elegí una categoría</option>
-                  {categoriasVisibles.map((c) => (
+                  {categorias.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nombre}
                     </option>

@@ -93,6 +93,8 @@ Contraseña: valor de `SEED_DEMO_PASSWORD` (por defecto `obrix1234`).
 | `npm run lint` | Lint con ESLint |
 | `npm run db:deploy` | `prisma migrate deploy` (migraciones versionadas) |
 | `npm run db:seed` | Sembrar datos demo |
+| `npm run db:backfill-busqueda` | Recalcular `Producto.busqueda` en la base |
+| `npm run db:users` | Listar usuarios (script de diagnóstico) |
 | `npx prisma generate` | Regenerar cliente Prisma (`src/generated/prisma`) |
 
 **Checklist antes de cerrar una fase:** `npm test` verde + `npx tsc --noEmit` sin errores + `npm run build` OK.
@@ -114,6 +116,7 @@ Contraseña: valor de `SEED_DEMO_PASSWORD` (por defecto `obrix1234`).
 - **Errores:** `jsonError`, `zodDetails`, `prismaErrorResponse` en `src/lib/api/http.ts` (mapeo P2002→409, P2003→400, P2014→409, P2025→404).
 - **Rate limiting:** por email para login (`loginRateLimiter`) y por usuario/endpoint para IA. Actualmente en memoria por instancia (`MemoryRateLimitStore`).
 - **Prisma:** esquema en `prisma/schema.prisma`, migraciones versionadas en `prisma/migrations`. Cliente generado en `src/generated/prisma` (gitignoreado).
+- **Catálogo del comercio:** búsqueda y paginación en PostgreSQL sobre `Producto.busqueda` (texto normalizado sin acentos, con `normalizarClave`). El filtro por categoría usa el índice `Producto_categoriaId_idx`; la API responde `{ productos, total, limit, offset }`.
 
 ## Estado
 
@@ -122,5 +125,5 @@ Contraseña: valor de `SEED_DEMO_PASSWORD` (por defecto `obrix1234`).
 - **En progreso/parcial:**
   - **Fase 14:** Cámara/código de barras (pendiente, requiere endpoint de búsqueda por `codigoBarras`) y push (diferido a development build; Expo Go iOS no soporta push).
   - **Fase 15:** Hardening y escalabilidad. Falta **rate limit con store compartido** (Redis/Upstash) detrás de `RateLimitStore` para entornos serverless/multi-instancia.
-- **Verificación:** `npm test` 328/328 (37 archivos), `npx tsc --noEmit` 0 errores, `next build` OK.
-- **Seguridad:** `npm audit` reporta 5 vulnerabilidades high en `eslint-config-next` (tooling de lint, no runtime). No se aplican fixes con `--force` (breaking) hasta resolución upstream.
+- **Verificación:** `npm test` 369/369 (43 archivos), `npx tsc --noEmit` 0 errores, `next build` OK.
+- **Seguridad:** `npm audit` reporta 0 vulnerabilidades.

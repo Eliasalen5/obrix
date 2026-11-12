@@ -1,9 +1,14 @@
 import "dotenv/config";
 import * as fs from "fs";
+import * as path from "path";
 import * as XLSX from "xlsx";
 
-const EXCEL_PATH = "C:/Users/HP 255R G10/Downloads/Catálogo obrix 2026.xlsx";
-const OUT_PATH = "C:/Users/HP 255R G10/Desktop/obrix/catalogo-extraido.json";
+const EXCEL_PATH =
+  process.env.CATALOGO_XLSX_PATH ??
+  path.join(process.cwd(), "data/catalogo/catalogo-obrix-2026.xlsx");
+const OUT_PATH =
+  process.env.CATALOGO_JSON_PATH ??
+  path.join(process.cwd(), "data/catalogo/catalogo-extraido.json");
 
 const HOJA_A_CATEGORIA: Record<string, string> = {
   "AguaSanitarios": "Sanitarios, plomería y gas",

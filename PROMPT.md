@@ -151,7 +151,11 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
   cuenta de Expo y que la **CLI use la misma cuenta** (`EXPO_TOKEN` evita el login
   por navegador, que falla en este Windows). Íconos/splash propios en
   `mobile/assets/` (logo Obrix).
-- **Verificación:** `npm test` 328/328 (37 archivos), `tsc --noEmit` 0 errores,
+- **Catálogo del comercio (Fase 15):** búsqueda y paginación en PostgreSQL sobre
+  `Producto.busqueda` (texto normalizado) e índice por `categoriaId`. La UI de
+  ofertas usa debounce + `AbortController` y ya no filtra todo el catálogo en
+  memoria. Backfill: `npm run db:backfill-busqueda`.
+- **Verificación:** `npm test` 369/369 (43 archivos), `tsc --noEmit` 0 errores,
   `next build` OK.
 - **Deploy:** web en Vercel sobre Prisma Postgres.
 
@@ -169,6 +173,4 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
   CLIENTE de búsqueda por `codigoBarras`) y push (requiere development build: Expo Go
   iOS no soporta push remoto; además modelo de tokens + endpoint). Geolocalización ya
   hecha con `expo-location`.
-- `npm audit`: 5 vulnerabilidades high, todas de `eslint-config-next` (tooling de
-  lint, NO runtime). Solo se arreglan con `--force` (breaking: baja a v14) → no
-  aplicar. Sin acción hasta que el upstream lo resuelva.
+- `npm audit`: 0 vulnerabilidades.

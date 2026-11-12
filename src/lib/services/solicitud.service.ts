@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { prismaErrorCode } from "@/lib/api/http";
 import { normalizarTexto } from "@/lib/services/cotizador.service";
+import { construirBusquedaProducto } from "@/lib/text/busqueda";
 import type { Prisma } from "@/generated/prisma/client";
 import {
   detectarCoincidencias,
@@ -212,12 +213,23 @@ export const solicitudService = {
           );
         }
 
+        const sku = skuGenerado(solicitud.id, propuesta.nombre);
         const creado = await tx.producto.create({
           data: {
-            sku: skuGenerado(solicitud.id, propuesta.nombre),
+            sku,
             nombre: propuesta.nombre,
             unidad: propuesta.unidad,
             descripcion: propuesta.descripcion,
+            busqueda: construirBusquedaProducto({
+              sku,
+              nombre: propuesta.nombre,
+              unidad: propuesta.unidad,
+              descripcion: propuesta.descripcion,
+              codigoBarras: propuesta.codigoBarras || null,
+              fabricante: propuesta.fabricante,
+              codigoFabricante: propuesta.codigoFabricante || null,
+              marca: propuesta.marca,
+            }),
             categoriaId: propuesta.categoriaId,
             codigoBarras: propuesta.codigoBarras || null,
             fabricante: propuesta.fabricante,

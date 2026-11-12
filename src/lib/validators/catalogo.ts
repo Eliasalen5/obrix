@@ -41,7 +41,26 @@ export const createProductoSchema = z.object({
 
 export const updateProductoSchema = createProductoSchema.partial();
 
+const numeroQuery = (defecto: number, min: number, max: number) =>
+  z.preprocess(
+    (valor) =>
+      valor === "" || valor === null || valor === undefined ? undefined : valor,
+    z.coerce.number().int().min(min).max(max).default(defecto),
+  );
+
+export const listProductosQuerySchema = z.object({
+  q: z.string().trim().max(120, "Máximo 120 caracteres").default(""),
+  categoriaId: z
+    .string()
+    .trim()
+    .max(40, "Máximo 40 caracteres")
+    .default(""),
+  limit: numeroQuery(50, 1, 200),
+  offset: numeroQuery(0, 0, 1_000_000),
+});
+
 export type CreateCategoriaInput = z.infer<typeof createCategoriaSchema>;
 export type UpdateCategoriaInput = z.infer<typeof updateCategoriaSchema>;
 export type CreateProductoInput = z.infer<typeof createProductoSchema>;
 export type UpdateProductoInput = z.infer<typeof updateProductoSchema>;
+export type ListProductosQueryInput = z.infer<typeof listProductosQuerySchema>;

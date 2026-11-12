@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import { construirBusquedaProducto } from "../src/lib/text/busqueda";
 import {
   categorias,
   comerciosDemo,
@@ -138,6 +139,7 @@ async function main() {
   for (const p of productosBase) {
     const cid = catMap.get(p.categoria);
     if (!cid) continue;
+    const busqueda = construirBusquedaProducto(p);
     await prisma.producto.upsert({
       where: { sku: p.sku },
       create: {
@@ -145,12 +147,14 @@ async function main() {
         nombre: p.nombre,
         unidad: p.unidad,
         descripcion: p.descripcion,
+        busqueda,
         categoriaId: cid,
       },
       update: {
         nombre: p.nombre,
         unidad: p.unidad,
         descripcion: p.descripcion,
+        busqueda,
         categoriaId: cid,
       },
     });

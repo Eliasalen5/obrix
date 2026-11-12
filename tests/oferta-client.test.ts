@@ -22,17 +22,30 @@ const INPUT = {
 };
 
 describe("cliente API ofertas (fetch)", () => {
-  it("listCatalogo hace GET /api/comercio/catalogo", async () => {
+  it("listCatalogo hace GET paginado a /api/comercio/catalogo", async () => {
+    const pagina = { productos: [{ id: "prod1" }], total: 1, limit: 50, offset: 0 };
     fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ data: [{ id: "prod1" }] }), { status: 200 }),
+      new Response(JSON.stringify({ data: pagina }), { status: 200 }),
     );
 
-    const res = await ofertaApi.listCatalogo();
+    const res = await ofertaApi.listCatalogo({ q: "cemento", limit: 50 });
 
-    expect(res).toEqual({ ok: true, data: [{ id: "prod1" }] });
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v1/comercio/catalogo",
-      expect.anything(),
+    expect(res).toEqual({ ok: true, data: pagina });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/api/v1/comercio/catalogo?q=cemento&limit=50",
+    );
+  });
+
+  it("listCategorias hace GET a /api/comercio/catalogo/categorias", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ data: [{ id: "c1" }] }), { status: 200 }),
+    );
+
+    const res = await ofertaApi.listCategorias();
+
+    expect(res).toEqual({ ok: true, data: [{ id: "c1" }] });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/api/v1/comercio/catalogo/categorias",
     );
   });
 

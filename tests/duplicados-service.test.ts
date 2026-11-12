@@ -8,7 +8,6 @@ vi.mock("@/lib/prisma", () => ({
 
 import {
   detectarCoincidencias,
-  filtrarProductos,
   normalizarClave,
   similitud,
   type ProductoComparable,
@@ -151,22 +150,4 @@ describe("similitud y búsqueda tolerante", () => {
     expect(similitud("cemento portland 50 kg", "cemento portland 50kg")).toBeGreaterThan(0.95);
   });
 
-  it("búsqueda tolera acentos y errores menores", () => {
-    const catalogo = [
-      prod({ id: "p1", nombre: "Herramienta de medición", unidad: "unidad" }),
-      prod({ id: "p2", nombre: "Cemento", unidad: "bolsa 50 kg" }),
-    ];
-    const res = filtrarProductos(catalogo, "medicion");
-    expect(res.map((p) => p.id)).toContain("p1");
-    expect(res.map((p) => p.id)).not.toContain("p2");
-  });
-
-  it("filtro por categoría", () => {
-    const catalogo = [
-      { ...prod({ id: "p1", nombre: "Cemento" }), categoriaId: "c1" },
-      { ...prod({ id: "p2", nombre: "Cemento gris" }), categoriaId: "c2" },
-    ];
-    const res = filtrarProductos(catalogo, "", "c2");
-    expect(res.map((p) => p.id)).toEqual(["p2"]);
-  });
 });

@@ -9,7 +9,10 @@ import type {
   Ubicacion,
 } from "@/lib/validators/cotizacion";
 import { RANKING_POR } from "@/lib/validators/cotizacion";
+import { normalizarTexto } from "@/lib/text/busqueda";
 import { haversineKm, redondearKm } from "./geo.service";
+
+export { normalizarTexto };
 
 export const UMBRAL_MATCH = 0.6;
 export const MAX_ALTERNATIVAS = 3;
@@ -70,16 +73,6 @@ const STOPWORDS = new Set([
   "un",
   "una",
 ]);
-
-export function normalizarTexto(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
 
 export function tokenizar(texto: string): string[] {
   return normalizarTexto(texto)

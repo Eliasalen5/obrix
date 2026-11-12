@@ -4,11 +4,14 @@ import * as path from "path";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { categorias } from "../prisma/catalogo.seed-data";
+import { construirBusquedaProducto } from "../src/lib/text/busqueda";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-const JSON_PATH = "C:/Users/HP 255R G10/Desktop/obrix/catalogo-extraido-limpio.json";
+const JSON_PATH =
+  process.env.CATALOGO_JSON_PATH ??
+  path.join(process.cwd(), "data/catalogo/catalogo-extraido-limpio.json");
 
 function normalizar(s: string): string {
   return s.toLowerCase().replace(/\s+/g, " ").trim();
@@ -52,8 +55,15 @@ async function main() {
   const skus = items.map(i => i.sku);
   const existentes = await prisma.producto.findMany({
     where: { sku: { in: skus } },
-    select: { sku: true }
+    select: {
+      sku: true,
+      marca: true,
+      fabricante: true,
+      codigoFabricante: true,
+      codigoBarras: true,
+    },
   });
+  const existentesMap = new Map(existentes.map((e) => [e.sku, e]));
   const existentesSet = new Set(existentes.map(e => e.sku));
   
   const nuevos = items.filter(i => !existentesSet.has(i.sku));
@@ -66,15 +76,18 @@ async function main() {
   for (let i = 0; i < nuevos.length; i += createChunkSize) {
     const chunk = nuevos.slice(i, i + createChunkSize);
     await prisma.producto.createMany({
-      data: chunk.map(p => ({
-        sku: p.sku,
-        nombre: p.nombre,
-        unidad: p.unidad,
-        categoriaId: catMap.get(normalizar(p.categoria))!,
-        descripcion: p.descripcion,
-        marca: "",
-        fabricante: "",
-      })),
+      data: chunk.map((p) => {
+        const data = {
+          sku: p.sku,
+          nombre: p.nombre,
+          unidad: p.unidad,
+          categoriaId: catMap.get(normalizar(p.categoria))!,
+          descripcion: p.descripcion,
+          marca: "",
+          fabricante: "",
+        };
+        return { ...data, busqueda: construirBusquedaProducto(data) };
+      }),
       skipDuplicates: true,
     });
     console.log(`Creados ${Math.min(i + createChunkSize, nuevos.length)}/${nuevos.length}`);
@@ -85,17 +98,29 @@ async function main() {
   for (let i = 0; i < aActualizar.length; i += updateChunkSize) {
     const chunk = aActualizar.slice(i, i + updateChunkSize);
     await Promise.all(
-      chunk.map(p =>
-        prisma.producto.update({
+      chunk.map((p) => {
+        const actual = existentesMap.get(p.sku);
+        const data = {
+          nombre: p.nombre,
+          unidad: p.unidad,
+          categoriaId: catMap.get(normalizar(p.categoria))!,
+          descripcion: p.descripcion,
+        };
+        return prisma.producto.update({
           where: { sku: p.sku },
           data: {
-            nombre: p.nombre,
-            unidad: p.unidad,
-            categoriaId: catMap.get(normalizar(p.categoria))!,
-            descripcion: p.descripcion,
+            ...data,
+            busqueda: construirBusquedaProducto({
+              ...data,
+              sku: p.sku,
+              marca: actual?.marca,
+              fabricante: actual?.fabricante,
+              codigoFabricante: actual?.codigoFabricante,
+              codigoBarras: actual?.codigoBarras,
+            }),
           },
-        })
-      )
+        });
+      })
     );
     console.log(`Actualizados ${Math.min(i + updateChunkSize, aActualizar.length)}/${aActualizar.length}`);
   }

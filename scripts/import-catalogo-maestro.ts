@@ -4,11 +4,14 @@ import * as path from "path";
 import * as XLSX from "xlsx";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { construirBusquedaProducto } from "../src/lib/text/busqueda";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-const EXCEL_PATH = "C:/Users/HP 255R G10/Downloads/Catálogo obrix 2026.xlsx";
+const EXCEL_PATH =
+  process.env.CATALOGO_XLSX_PATH ??
+  path.join(process.cwd(), "data/catalogo/catalogo-obrix-2026.xlsx");
 
 // Mapear hojas del excel a categorías existentes o nuevas
 const HOJA_A_CATEGORIA: Record<string, string> = {
@@ -186,18 +189,29 @@ async function main() {
           unidad: prod.unidad,
           categoriaId: prod.categoriaId,
           descripcion: prod.descripcion,
+          busqueda: construirBusquedaProducto({
+            sku: prod.sku,
+            nombre: prod.nombre,
+            unidad: prod.unidad,
+            descripcion: prod.descripcion,
+            marca: existing.marca,
+            fabricante: existing.fabricante,
+            codigoFabricante: existing.codigoFabricante,
+            codigoBarras: existing.codigoBarras,
+          }),
         },
       });
       actualizados++;
     } else {
+      const data = {
+        sku: prod.sku,
+        nombre: prod.nombre,
+        unidad: prod.unidad,
+        categoriaId: prod.categoriaId,
+        descripcion: prod.descripcion,
+      };
       await prisma.producto.create({
-        data: {
-          sku: prod.sku,
-          nombre: prod.nombre,
-          unidad: prod.unidad,
-          categoriaId: prod.categoriaId,
-          descripcion: prod.descripcion,
-        },
+        data: { ...data, busqueda: construirBusquedaProducto(data) },
       });
       creados++;
     }

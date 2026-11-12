@@ -36,11 +36,6 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Código generado por Prisma (no se versiona ni se lintea).
     "src/generated/**",
-    // Scripts locales temporales de lectura de Excel.
-    "_extract_all.js",
-    "_inspect_sheets.js",
-    "_read_xlsx.js",
-    "_read_xlsx_all.js",
   ]),
 ]);
 

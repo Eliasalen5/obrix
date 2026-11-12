@@ -40,6 +40,8 @@ model Producto {
   nombre      String
   unidad      String // "bolsa 50 kg", "unidad", "m", "litro", "m²", ...
   descripcion String            @default("")
+  // Texto normalizado (sin acentos, minúsculas) para búsquedas indexables.
+  busqueda    String            @default("")
   // Identificación canónica para detección de duplicados (catálogo maestro)
   codigoBarras    String?   @unique // identificador confiable cuando existe
   fabricante      String    @default("")
@@ -53,6 +55,8 @@ model Producto {
   materiales  MaterialCotizacion[]
   solicitudes SolicitudProducto[]
   createdAt   DateTime          @default(now())
+
+  @@index([categoriaId])
 }
 
 // Propuesta de un comercio para incorporar un producto al catálogo maestro.

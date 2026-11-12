@@ -18,7 +18,7 @@ import {
   createCategoriaSchema,
   createProductoSchema,
 } from "@/lib/validators/catalogo";
-import { normalizarTexto } from "@/lib/services/cotizador.service";
+import { normalizarTexto } from "@/lib/text/busqueda";
 
 type Mensaje = { tipo: "ok" | "error"; texto: string };
 
