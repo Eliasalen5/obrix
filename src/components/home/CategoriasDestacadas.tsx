@@ -4,59 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRef } from "react";
 import { guardarProyectoPendiente } from "@/lib/proyecto/pendiente";
-
-const CATEGORIAS = [
-  {
-    nombre: "Ferreterías",
-    slug: "ferreterias",
-    img: "/ferreteria.jpg",
-  },
-  {
-    nombre: "Corralones y materiales de construcción",
-    slug: "corralones",
-    img: "/corralones.png",
-  },
-  {
-    nombre: "Pinturerías",
-    slug: "pinturerias",
-    img: "/pintura.jpg",
-  },
-  {
-    nombre: "Casas de electricidad",
-    slug: "electricidad",
-    img: "/electricidad.webp",
-  },
-  {
-    nombre: "Sanitarios, plomería y gas",
-    slug: "sanitarios",
-    img: "/sanitarios-plomeria.jpg",
-  },
-  {
-    nombre: "Madereras y carpintería",
-    slug: "madereras",
-    img: "/madera-carpinteria.jpg",
-  },
-  {
-    nombre: "Cerámicas, pisos y revestimientos",
-    slug: "ceramicas",
-    img: "/ladrillos.jpg",
-  },
-  {
-    nombre: "Techos y zinguería",
-    slug: "techos",
-    img: "/hierro.jpg",
-  },
-  {
-    nombre: "Vidrierías",
-    slug: "vidrierias",
-    img: "/vidrierias.jpg",
-  },
-  {
-    nombre: "Máquinas, herramientas y equipos",
-    slug: "maquinas",
-    img: "/herramientas.jpg",
-  },
-];
+import { CATEGORIAS } from "@/lib/catalogo/categorias";
 
 export default function CategoriasDestacadas() {
   const scrollRef = useRef<HTMLDivElement>(null);
