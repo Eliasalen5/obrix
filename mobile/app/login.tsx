@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { colors, radius } from "@/theme";
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -38,25 +39,49 @@ export default function LoginScreen() {
           <Text style={styles.logo}>Obrix</Text>
           <Text style={styles.subtitle}>Sumá tu proyecto y cotizá en minutos</Text>
 
+          <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
             placeholder="Email"
             placeholderTextColor={colors.muted}
+            accessibilityLabel="Email"
             autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect={false}
             keyboardType="email-address"
+            textContentType="emailAddress"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
             value={email}
             onChangeText={setEmail}
           />
+          <Text style={styles.label}>Contraseña</Text>
           <TextInput
+            ref={passwordRef}
             style={styles.input}
             placeholder="Contraseña"
             placeholderTextColor={colors.muted}
+            accessibilityLabel="Contraseña"
+            autoCapitalize="none"
+            autoComplete="current-password"
+            autoCorrect={false}
             secureTextEntry
+            textContentType="password"
+            returnKeyType="done"
+            onSubmitEditing={() => void onSubmit()}
             value={password}
             onChangeText={setPassword}
           />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text
+              style={styles.error}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              {error}
+            </Text>
+          ) : null}
 
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -100,6 +125,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
     color: colors.text,
+  },
+  label: {
+    color: "#e2e8f0",
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 6,
   },
   error: { color: "#fca5a5", marginBottom: 8, textAlign: "center" },
   button: {

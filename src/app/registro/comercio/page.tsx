@@ -6,9 +6,26 @@ import { useRouter } from "next/navigation";
 import { solicitudAltaComercioSchema } from "@/lib/validators/auth";
 import { request } from "@/lib/api/httpClient";
 import { agregarCallbackUrl } from "@/lib/auth/callback";
+import FormField from "@/components/forms/FormField";
+import { fieldErrors, focusFirstError } from "@/lib/forms/fieldErrors";
 
 type Step = 1 | 2;
 type UbicacionEstado = "idle" | "cargando" | "lista" | "error";
+
+type Campo =
+  | "nombreTitular"
+  | "email"
+  | "telefonoTitular"
+  | "password"
+  | "confirmPassword"
+  | "nombreFantasia"
+  | "razonSocial"
+  | "cuit"
+  | "direccion"
+  | "provincia"
+  | "localidad"
+  | "telefonoComercial"
+  | "rubro";
 
 export default function RegistroComercioPage() {
   const router = useRouter();
@@ -30,6 +47,7 @@ export default function RegistroComercioPage() {
     telefonoComercial: "",
     rubro: "",
   });
+  const [errores, setErrores] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [ubicacionEstado, setUbicacionEstado] =
@@ -37,7 +55,18 @@ export default function RegistroComercioPage() {
   const [precision, setPrecision] = useState<number | null>(null);
   const [enviada, setEnviada] = useState(false);
 
-  function nextStep() {
+  function setField(campo: Campo, value: string) {
+    setForm((prev) => ({ ...prev, [campo]: value }));
+    setErrores((prev) => {
+      if (!prev[campo]) return prev;
+      const next = { ...prev };
+      delete next[campo];
+      return next;
+    });
+  }
+
+  function nextStep(e: FormEvent) {
+    e.preventDefault();
     setError(null);
     const partial = solicitudAltaComercioSchema.partial({
       nombreFantasia: true,
@@ -53,9 +82,12 @@ export default function RegistroComercioPage() {
       confirmPassword: form.confirmPassword,
     });
     if (!partial.success) {
-      setError(partial.error.issues[0]?.message ?? "Datos inválidos");
+      const nextErrors = fieldErrors(partial.error);
+      setErrores(nextErrors);
+      focusFirstError(nextErrors);
       return;
     }
+    setErrores({});
     setStep(2);
   }
 
@@ -134,9 +166,12 @@ export default function RegistroComercioPage() {
       categorias: [],
     });
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Datos inválidos");
+      const nextErrors = fieldErrors(parsed.error);
+      setErrores(nextErrors);
+      focusFirstError(nextErrors);
       return;
     }
+    setErrores({});
 
     setLoading(true);
     try {
@@ -202,91 +237,131 @@ export default function RegistroComercioPage() {
       </div>
 
       {step === 1 ? (
-        <div className="flex flex-col gap-3">
+        <form onSubmit={nextStep} noValidate className="flex flex-col gap-4">
           <h2 className="text-lg font-medium">Datos del titular</h2>
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Nombre y apellido del titular"
+          <FormField
+            id="nombreTitular"
+            label="Nombre y apellido del titular"
+            autoComplete="name"
             value={form.nombreTitular}
-            onChange={(e) => setForm({ ...form, nombreTitular: e.target.value })}
+            onChange={(value) => setField("nombreTitular", value)}
+            error={errores.nombreTitular}
+            required
           />
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          <FormField
+            id="email"
+            label="Email"
             type="email"
-            placeholder="Email"
+            autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={(value) => setField("email", value)}
+            error={errores.email}
+            required
           />
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Teléfono del titular"
+          <FormField
+            id="telefonoTitular"
+            label="Teléfono del titular"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
             value={form.telefonoTitular}
-            onChange={(e) => setForm({ ...form, telefonoTitular: e.target.value })}
+            onChange={(value) => setField("telefonoTitular", value)}
+            error={errores.telefonoTitular}
+            required
           />
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          <FormField
+            id="password"
+            label="Contraseña"
             type="password"
-            placeholder="Contraseña (mínimo 8 caracteres)"
+            autoComplete="new-password"
+            hint="Mínimo 8 caracteres."
             value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            onChange={(value) => setField("password", value)}
+            error={errores.password}
+            required
           />
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          <FormField
+            id="confirmPassword"
+            label="Confirmar contraseña"
             type="password"
-            placeholder="Confirmar contraseña"
+            autoComplete="new-password"
             value={form.confirmPassword}
-            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+            onChange={(value) => setField("confirmPassword", value)}
+            error={errores.confirmPassword}
+            required
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <p role="alert" aria-live="polite" className="text-sm text-red-600">
+              {error}
+            </p>
+          )}
           <button
-            type="button"
-            onClick={nextStep}
+            type="submit"
             className="rounded bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900"
           >
             Siguiente
           </button>
-        </div>
+        </form>
       ) : (
-        <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
           <h2 className="text-lg font-medium">Datos del comercio</h2>
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Nombre de fantasía"
+          <FormField
+            id="nombreFantasia"
+            label="Nombre de fantasía"
+            autoComplete="organization"
             value={form.nombreFantasia}
-            onChange={(e) => setForm({ ...form, nombreFantasia: e.target.value })}
+            onChange={(value) => setField("nombreFantasia", value)}
+            error={errores.nombreFantasia}
             required
           />
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Razón social (opcional)"
+          <FormField
+            id="razonSocial"
+            label="Razón social"
+            hint="Opcional."
+            autoComplete="organization"
             value={form.razonSocial}
-            onChange={(e) => setForm({ ...form, razonSocial: e.target.value })}
+            onChange={(value) => setField("razonSocial", value)}
+            error={errores.razonSocial}
           />
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="CUIT (00-00000000-0 o 00000000000, opcional)"
+          <FormField
+            id="cuit"
+            label="CUIT"
+            hint="Opcional. Formato 00-00000000-0 o 00000000000."
+            inputMode="numeric"
+            autoComplete="off"
             value={form.cuit}
-            onChange={(e) => setForm({ ...form, cuit: e.target.value })}
+            onChange={(value) => setField("cuit", value)}
+            error={errores.cuit}
           />
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Dirección completa"
+          <FormField
+            id="direccion"
+            label="Dirección"
+            autoComplete="street-address"
             value={form.direccion}
-            onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+            onChange={(value) => setField("direccion", value)}
+            error={errores.direccion}
             required
           />
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              placeholder="Provincia (opcional)"
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              id="provincia"
+              label="Provincia"
+              hint="Opcional."
+              autoComplete="address-level1"
               value={form.provincia}
-              onChange={(e) => setForm({ ...form, provincia: e.target.value })}
+              onChange={(value) => setField("provincia", value)}
+              error={errores.provincia}
             />
-            <input
-              className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              placeholder="Localidad (opcional)"
+            <FormField
+              id="localidad"
+              label="Localidad"
+              hint="Opcional."
+              autoComplete="address-level2"
               value={form.localidad}
-              onChange={(e) => setForm({ ...form, localidad: e.target.value })}
+              onChange={(value) => setField("localidad", value)}
+              error={errores.localidad}
             />
           </div>
 
@@ -323,24 +398,39 @@ export default function RegistroComercioPage() {
             )}
           </div>
 
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Teléfono comercial"
+          <FormField
+            id="telefonoComercial"
+            label="Teléfono comercial"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
             value={form.telefonoComercial}
-            onChange={(e) => setForm({ ...form, telefonoComercial: e.target.value })}
+            onChange={(value) => setField("telefonoComercial", value)}
+            error={errores.telefonoComercial}
             required
           />
-          <input
-            className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            placeholder="Rubro (opcional)"
+          <FormField
+            id="rubro"
+            label="Rubro"
+            hint="Opcional."
+            autoComplete="off"
             value={form.rubro}
-            onChange={(e) => setForm({ ...form, rubro: e.target.value })}
+            onChange={(value) => setField("rubro", value)}
+            error={errores.rubro}
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <p role="alert" aria-live="polite" className="text-sm text-red-600">
+              {error}
+            </p>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setStep(1)}
+              onClick={() => {
+                setErrores({});
+                setError(null);
+                setStep(1);
+              }}
               className="rounded border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
             >
               Volver

@@ -85,6 +85,7 @@ export default function IngresarForm() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             autoComplete="email"
             autoCapitalize="none"
@@ -100,6 +101,7 @@ export default function IngresarForm() {
           </label>
           <input
             id="password"
+            name="password"
             type="password"
             autoComplete="current-password"
             required
@@ -109,7 +111,11 @@ export default function IngresarForm() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" aria-live="polite" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
