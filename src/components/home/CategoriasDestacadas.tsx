@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRef } from "react";
+import { guardarProyectoPendiente } from "@/lib/proyecto/pendiente";
 
 const CATEGORIAS = [
   {
@@ -137,6 +138,12 @@ export default function CategoriasDestacadas() {
               <Link
                 key={cat.slug}
                 href="/cliente/proyecto"
+                onClick={() =>
+                  guardarProyectoPendiente(
+                    `Quiero comprar materiales de ${cat.nombre}.`,
+                    false,
+                  )
+                }
                 className="group relative w-[200px] flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 transition-all hover:shadow-lg dark:border-zinc-800 sm:w-[220px] lg:w-[240px]"
               >
                 <div className="relative aspect-[4/3] w-full">
@@ -161,6 +168,12 @@ export default function CategoriasDestacadas() {
               <Link
                 key={cat.slug}
                 href="/cliente/proyecto"
+                onClick={() =>
+                  guardarProyectoPendiente(
+                    `Quiero comprar materiales de ${cat.nombre}.`,
+                    false,
+                  )
+                }
                 className="group relative w-[200px] flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 transition-all hover:shadow-lg dark:border-zinc-800 sm:w-[220px] lg:w-[240px]"
               >
                 <div className="relative aspect-[4/3] w-full">

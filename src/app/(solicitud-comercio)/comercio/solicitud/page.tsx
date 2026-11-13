@@ -4,12 +4,14 @@ import { authOptions } from "@/lib/auth/options";
 import { ROLES } from "@/lib/auth/constants";
 import { prisma } from "@/lib/prisma";
 
+const CALLBACK = "/comercio/solicitud";
+
 export default async function SolicitudComercioPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as { id?: string; role?: string } | undefined;
 
   if (!session || !user?.id) {
-    redirect("/ingresar");
+    redirect(`/ingresar?callbackUrl=${encodeURIComponent(CALLBACK)}`);
   }
 
   if (user.role === ROLES.ADMIN) {

@@ -60,4 +60,35 @@ describe("schemas de auth — normalización de email", () => {
     });
     expect(parsed.success).toBe(false);
   });
+
+  it("solicitudAltaComercioSchema rechaza coordenadas vacías", () => {
+    const parsed = solicitudAltaComercioSchema.safeParse({
+      ...credenciales,
+      email: "juan@mail.com",
+      nombreTitular: "Juan Pérez",
+      telefonoTitular: "1123456789",
+      nombreFantasia: "Ferretería Juan",
+      direccion: "Av. Siempre Viva 123",
+      lat: "",
+      lng: "",
+      telefonoComercial: "1123456789",
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("solicitudAltaComercioSchema acepta coordenadas numéricas como texto", () => {
+    const parsed = solicitudAltaComercioSchema.parse({
+      ...credenciales,
+      email: "juan@mail.com",
+      nombreTitular: "Juan Pérez",
+      telefonoTitular: "1123456789",
+      nombreFantasia: "Ferretería Juan",
+      direccion: "Av. Siempre Viva 123",
+      lat: "-34.6037",
+      lng: "-58.3816",
+      telefonoComercial: "1123456789",
+    });
+    expect(parsed.lat).toBe(-34.6037);
+    expect(parsed.lng).toBe(-58.3816);
+  });
 });

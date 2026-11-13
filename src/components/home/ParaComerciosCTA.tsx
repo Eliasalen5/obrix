@@ -57,7 +57,7 @@ export default function ParaComerciosCTA() {
             </li>
           </ul>
           <Link
-            href="/ingresar"
+            href="/registro/comercio"
             className="mt-8 inline-block rounded-full bg-zinc-900 px-6 py-2.5 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
             Quiero sumar mi negocio

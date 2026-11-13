@@ -157,7 +157,7 @@ Cada fase se explica en criollo al usuario y NO avanza sin su confirmación.
   memoria. Backfill: `npm run db:backfill-busqueda`.
 - **Home (UX):** el hero permite describir el proyecto, guarda el texto para
   sobrevivir login/registro y abre el asistente con cálculo automático.
-- **Verificación:** `npm test` 378/378 (45 archivos), `tsc --noEmit` 0 errores,
+- **Verificación:** `npm test` 387/387 (45 archivos), `tsc --noEmit` 0 errores,
   `next build` OK.
 - **Deploy:** web en Vercel sobre Prisma Postgres.
 

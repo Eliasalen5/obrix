@@ -4,7 +4,12 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSession, signIn } from "next-auth/react";
 import { ROLES, type Role } from "@/lib/auth/constants";
-import { agregarCallbackUrl, resolverCallbackUrl } from "@/lib/auth/callback";
+import {
+  agregarCallbackUrl,
+  esDestinoPermitidoPorRol,
+  mensajeContinuidad,
+  resolverCallbackUrl,
+} from "@/lib/auth/callback";
 
 const PANEL_POR_ROL: Record<Role, string> = {
   [ROLES.CLIENTE]: "/cliente",
@@ -19,6 +24,10 @@ export default function IngresarForm() {
     searchParams.get("callbackUrl"),
     "",
   );
+  const avisoContinuidad = mensajeContinuidad(callbackUrl);
+  const callbackCliente = callbackUrl.startsWith("/cliente")
+    ? callbackUrl
+    : "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,9 +54,9 @@ export default function IngresarForm() {
     const session = await getSession();
     const role = (session?.user as { role?: Role } | undefined)?.role;
     const panel = role ? PANEL_POR_ROL[role] : null;
-    const callbackValido =
-      callbackUrl &&
-      (!panel || callbackUrl === panel || callbackUrl.startsWith(`${panel}/`));
+    const callbackValido = Boolean(
+      role && esDestinoPermitidoPorRol(role, callbackUrl),
+    );
     const destino = callbackValido ? callbackUrl : (panel ?? "/");
     router.push(destino);
     router.refresh();
@@ -59,6 +68,15 @@ export default function IngresarForm() {
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Entrá con tu cuenta para cotizar y gestionar pedidos.
       </p>
+
+      {avisoContinuidad && (
+        <div
+          role="status"
+          className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200"
+        >
+          {avisoContinuidad}
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div>
@@ -107,7 +125,7 @@ export default function IngresarForm() {
           ¿No tenés cuenta?{" "}
           <a
             className="text-blue-600 hover:underline"
-            href={agregarCallbackUrl("/registro/cliente", callbackUrl)}
+            href={agregarCallbackUrl("/registro/cliente", callbackCliente)}
           >
             Crear cuenta cliente
           </a>

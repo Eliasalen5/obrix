@@ -26,16 +26,18 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Contraseña requerida"),
 });
 
-const coordenadaSchema = z.coerce
-  .number()
-  .finite("Coordenada inválida")
-  .refine((v) => v >= -90 && v <= 90, "Latitud inválida")
-  .or(
-    z.coerce
-      .number()
-      .finite("Coordenada inválida")
-      .refine((v) => v >= -180 && v <= 180, "Longitud inválida"),
+function coordenada(min: number, max: number, mensaje: string) {
+  return z.preprocess(
+    (value) =>
+      value == null || (typeof value === "string" && value.trim() === "")
+        ? undefined
+        : value,
+    z.coerce.number().finite(mensaje).min(min).max(max),
   );
+}
+
+const latitudSchema = coordenada(-90, 90, "Latitud inválida");
+const longitudSchema = coordenada(-180, 180, "Longitud inválida");
 
 export const registroClienteSchema = z
   .object({
@@ -88,8 +90,8 @@ export const solicitudAltaComercioSchema = z
     direccion: z.string().trim().min(5, "Dirección requerida"),
     provincia: z.string().trim().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
     localidad: z.string().trim().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
-    lat: z.coerce.number().finite("Latitud inválida").min(-90).max(90),
-    lng: z.coerce.number().finite("Longitud inválida").min(-180).max(180),
+    lat: latitudSchema,
+    lng: longitudSchema,
     telefonoComercial: z
       .string()
       .trim()
