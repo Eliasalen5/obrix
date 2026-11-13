@@ -76,55 +76,64 @@ export default function CategoriasDestacadas() {
   const secondRow = CATEGORIAS.slice(mitad);
 
   return (
-    <section id="categorias" className="mx-auto w-full max-w-6xl px-4 py-12">
-      <div className="flex items-end justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Categorías
-          </h2>
-          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-            Encontrá lo que necesitás por rubro
-          </p>
-        </div>
-        <div className="hidden gap-2 sm:flex">
-          <button
-            onClick={() => scroll("left")}
-            className="rounded-full border border-zinc-300 p-2 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            aria-label="Anterior"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+    <section
+      id="categorias"
+      className="bg-obrix-white text-obrix-black"
+    >
+      <div className="mx-auto w-full max-w-6xl px-4 py-14">
+        <div className="flex items-end justify-between">
+          <div>
+            <span
+              aria-hidden="true"
+              className="mb-3 block h-1 w-12 rounded-full bg-obrix-orange"
+            />
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Categorías
+            </h2>
+            <p className="mt-2 text-neutral-600">
+              Encontrá lo que necesitás por rubro
+            </p>
+          </div>
+          <div className="hidden gap-2 sm:flex">
+            <button
+              onClick={() => scroll("left")}
+              className="rounded-full border border-neutral-300 p-2 text-obrix-black transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
+              aria-label="Anterior"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={() => scroll("right")}
-            className="rounded-full border border-zinc-300 p-2 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            aria-label="Siguiente"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              className="rounded-full border border-neutral-300 p-2 text-obrix-black transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
+              aria-label="Siguiente"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
       <div
@@ -144,7 +153,7 @@ export default function CategoriasDestacadas() {
                     false,
                   )
                 }
-                className="group relative w-[200px] flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 transition-all hover:shadow-lg dark:border-zinc-800 sm:w-[220px] lg:w-[240px]"
+                className="group relative w-[200px] flex-shrink-0 overflow-hidden rounded-xl border border-neutral-200 transition-all hover:border-obrix-orange hover:shadow-lg sm:w-[220px] lg:w-[240px]"
               >
                 <div className="relative aspect-[4/3] w-full">
                   <Image
@@ -156,6 +165,10 @@ export default function CategoriasDestacadas() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
+                  <span
+                    aria-hidden="true"
+                    className="mb-1 block h-0.5 w-6 bg-obrix-orange"
+                  />
                   <h3 className="text-xs font-medium leading-tight text-white drop-shadow-sm sm:text-sm">
                     {cat.nombre}
                   </h3>
@@ -174,7 +187,7 @@ export default function CategoriasDestacadas() {
                     false,
                   )
                 }
-                className="group relative w-[200px] flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 transition-all hover:shadow-lg dark:border-zinc-800 sm:w-[220px] lg:w-[240px]"
+                className="group relative w-[200px] flex-shrink-0 overflow-hidden rounded-xl border border-neutral-200 transition-all hover:border-obrix-orange hover:shadow-lg sm:w-[220px] lg:w-[240px]"
               >
                 <div className="relative aspect-[4/3] w-full">
                   <Image
@@ -186,6 +199,10 @@ export default function CategoriasDestacadas() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
+                  <span
+                    aria-hidden="true"
+                    className="mb-1 block h-0.5 w-6 bg-obrix-orange"
+                  />
                   <h3 className="text-xs font-medium leading-tight text-white drop-shadow-sm sm:text-sm">
                     {cat.nombre}
                   </h3>
