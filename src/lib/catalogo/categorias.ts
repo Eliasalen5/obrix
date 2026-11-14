@@ -75,7 +75,7 @@ export const CATEGORIAS: CategoriaMenu[] = [
   {
     nombre: "Cerámicas, pisos y revestimientos",
     slug: "ceramicas",
-    img: "/ladrillos.jpg",
+    img: "/ceramicos.jpg",
     subcategorias: [
       "Cerámicos para pisos y paredes",
       "Porcelanatos",
@@ -86,7 +86,7 @@ export const CATEGORIAS: CategoriaMenu[] = [
   {
     nombre: "Techos y zinguería",
     slug: "techos",
-    img: "/hierro.jpg",
+    img: "/techos-zingueria.jpg",
     subcategorias: [
       "Chapas y paneles para techos",
       "Canaletas y desagües pluviales",
