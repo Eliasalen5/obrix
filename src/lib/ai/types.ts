@@ -13,4 +13,10 @@ export interface AiProvider {
     consulta: string,
     signal: AbortSignal,
   ): Promise<unknown>;
+  /** Devuelve la identificación visual cruda; el servicio la valida. */
+  identificarImagen(
+    imagenBase64: string,
+    mime: string,
+    signal: AbortSignal,
+  ): Promise<unknown>;
 }

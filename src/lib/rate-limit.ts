@@ -240,6 +240,13 @@ export const busquedaIaRateLimiter = createRateLimiter({
   onStoreError: "deny",
 });
 
+export const visionRateLimiter = createRateLimiter({
+  limit: resolveLimitPerMin(),
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  prefix: "obrix:rl:vision",
+  onStoreError: "deny",
+});
+
 /**
  * Limiter para intentos de login (credenciales). Clave por email normalizado:
  * mitiga fuerza bruta / credential stuffing contra una cuenta. Límite más

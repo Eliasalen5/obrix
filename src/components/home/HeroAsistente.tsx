@@ -10,6 +10,12 @@ import {
 import { CONSULTA_MAX, CONSULTA_MIN } from "@/lib/validators/busqueda";
 import { guardarProyectoPendiente } from "@/lib/proyecto/pendiente";
 import { busquedaIaApi } from "@/lib/api/busquedaIaClient";
+import { visionApi } from "@/lib/api/visionClient";
+import { guardarResultadoVision } from "@/lib/vision/resultado";
+import {
+  IMAGEN_MAX_BYTES,
+  TIPOS_IMAGEN_PERMITIDOS,
+} from "@/lib/validators/vision";
 
 type Modo = "escribir" | "foto" | "proyecto";
 
@@ -48,6 +54,10 @@ export default function HeroAsistente() {
   const [buscando, setBuscando] = useState(false);
   const [errorBusqueda, setErrorBusqueda] = useState<string | null>(null);
 
+  const [foto, setFoto] = useState<File | null>(null);
+  const [analizando, setAnalizando] = useState(false);
+  const [errorFoto, setErrorFoto] = useState<string | null>(null);
+
   const [descripcion, setDescripcion] = useState("");
   const [errorProyecto, setErrorProyecto] = useState<string | null>(null);
 
@@ -58,6 +68,29 @@ export default function HeroAsistente() {
     setModo(nuevo);
     setErrorBusqueda(null);
     setErrorProyecto(null);
+    setErrorFoto(null);
+  }
+
+  async function onIdentificar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!foto) {
+      setErrorFoto("Elegí o sacá una fotografía del material.");
+      return;
+    }
+    if (foto.size > IMAGEN_MAX_BYTES) {
+      setErrorFoto("La fotografía supera el máximo de 4 MB.");
+      return;
+    }
+    setErrorFoto(null);
+    setAnalizando(true);
+    const res = await visionApi.identificar(foto);
+    setAnalizando(false);
+    if (!res.ok) {
+      setErrorFoto(res.error);
+      return;
+    }
+    guardarResultadoVision(res.data);
+    router.push("/busqueda/foto");
   }
 
   async function onBuscar(event: FormEvent<HTMLFormElement>) {
@@ -213,21 +246,52 @@ export default function HeroAsistente() {
             )}
 
             {modo === "foto" && (
-              <div className="mt-2 rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-center">
-                <span className="inline-block rounded-full bg-obrix-gray px-3 py-1 text-xs font-semibold uppercase tracking-wide text-obrix-black">
-                  Próximamente
-                </span>
-                <p className="mx-auto mt-3 max-w-md text-sm text-neutral-600">
-                  Vas a poder sacar una foto a una pieza, un tornillo o un
-                  accesorio y Obrix va a identificar el tipo de objeto, sus
-                  características visibles y los productos compatibles del
-                  catálogo.
+              <form onSubmit={onIdentificar} className="mt-2">
+                <label
+                  htmlFor="hero-foto"
+                  className="block cursor-pointer rounded-xl border border-dashed border-neutral-300 px-4 py-6 text-center transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
+                >
+                  <span className="block text-sm font-semibold text-obrix-black">
+                    {foto ? foto.name : "Elegí o sacá una foto del material"}
+                  </span>
+                  <span className="mt-2 block text-xs text-neutral-500">
+                    JPG, PNG o WebP · máximo 4 MB
+                  </span>
+                </label>
+                <input
+                  id="hero-foto"
+                  type="file"
+                  accept={TIPOS_IMAGEN_PERMITIDOS.join(",")}
+                  capture="environment"
+                  className="sr-only"
+                  onChange={(event) => {
+                    setFoto(event.target.files?.[0] ?? null);
+                    setErrorFoto(null);
+                  }}
+                />
+                <p className="mt-2 px-2 text-xs text-neutral-500">
+                  La IA analiza el objeto y sus características visibles. La
+                  identificación puede ser probable: medidas, roscas y
+                  especificaciones técnicas se confirman aparte.
                 </p>
-                <p className="mx-auto mt-2 max-w-md text-xs text-neutral-500">
-                  La identificación por foto es probable, no confirmada: medidas,
-                  roscas y especificaciones técnicas siempre se verifican aparte.
-                </p>
-              </div>
+                <div className="mt-2 flex flex-col gap-2 border-t border-neutral-200 px-2 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-neutral-500">
+                    La foto se procesa en memoria y no se guarda.
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={!foto || analizando}
+                    className="rounded-full bg-obrix-orange px-5 py-2.5 font-semibold text-obrix-black transition-colors hover:bg-[#e85c00] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {analizando ? "Analizando foto…" : "Identificar y buscar"}
+                  </button>
+                </div>
+                {errorFoto && (
+                  <p role="alert" className="px-2 pb-1 text-sm text-red-600">
+                    {errorFoto}
+                  </p>
+                )}
+              </form>
             )}
 
             {modo === "proyecto" && (

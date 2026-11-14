@@ -1,12 +1,23 @@
 import type { AiConfig } from "./config";
 import { AiProviderError } from "./errors";
-import { BUSQUEDA_SYSTEM_PROMPT, SYSTEM_PROMPT } from "./prompt";
+import {
+  BUSQUEDA_SYSTEM_PROMPT,
+  SYSTEM_PROMPT,
+  VISION_SYSTEM_PROMPT,
+} from "./prompt";
 import type { AiProvider } from "./types";
 
 export type FetchLike = (
   input: string,
   init?: RequestInit,
 ) => Promise<Response>;
+
+type ContenidoUsuario =
+  | string
+  | Array<
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string; detail: "high" } }
+    >;
 
 export class OpenAiProvider implements AiProvider {
   readonly nombre = "openai";
@@ -25,9 +36,33 @@ export class OpenAiProvider implements AiProvider {
     return this.completarJson(BUSQUEDA_SYSTEM_PROMPT, consulta, signal);
   }
 
+  identificarImagen(
+    imagenBase64: string,
+    mime: string,
+    signal: AbortSignal,
+  ): Promise<unknown> {
+    return this.completarJson(
+      VISION_SYSTEM_PROMPT,
+      [
+        {
+          type: "text",
+          text: "Analizá esta fotografía y devolvé la identificación en el formato pedido.",
+        },
+        {
+          type: "image_url",
+          image_url: {
+            url: `data:${mime};base64,${imagenBase64}`,
+            detail: "high",
+          },
+        },
+      ],
+      signal,
+    );
+  }
+
   private async completarJson(
     systemPrompt: string,
-    userContent: string,
+    userContent: ContenidoUsuario,
     signal: AbortSignal,
   ): Promise<unknown> {
     const res = await this.fetchImpl(

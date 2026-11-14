@@ -49,7 +49,12 @@ export async function request<T>(
     ...httpConfig.headers,
     ...((init.headers as Record<string, string> | undefined) ?? {}),
   };
-  if (hasBody) mergedHeaders["content-type"] = "application/json";
+  const esFormulario =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+  // El navegador debe generar el boundary de multipart/form-data.
+  if (hasBody && !esFormulario) {
+    mergedHeaders["content-type"] = "application/json";
+  }
   const hasHeaders = Object.keys(mergedHeaders).length > 0;
 
   let res: Response;

@@ -1,9 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
 import { CATEGORIAS, subcategoriasDe } from "@/lib/catalogo/categorias";
-import { normalizarClave } from "@/lib/text/busqueda";
-import type { Prisma } from "@/generated/prisma/client";
+import { buscarOfertasPublicas } from "@/lib/ofertas/buscarOfertas";
 import OfertaCard from "./OfertaCard";
 
 export const dynamic = "force-dynamic";
@@ -49,51 +47,11 @@ export default async function OfertasPage({ searchParams }: Props) {
   const subcategoria = primerValor(params.subcategoria).trim();
   const comercioId = primerValor(params.comercioId).trim();
 
-  const tokens = [...new Set(normalizarClave(q).split(" ").filter(Boolean))];
-
-  const where: Prisma.OfertaWhereInput = {
-    activo: true,
-    comercio: { activo: true },
-  };
-
-  const productoFiltro: Prisma.ProductoWhereInput = {};
-  if (categoria) {
-    productoFiltro.categoria = {
-      nombre: { equals: categoria, mode: "insensitive" },
-    };
-  }
-  if (subcategoria) {
-    productoFiltro.subcategoria = {
-      nombre: { equals: subcategoria, mode: "insensitive" },
-    };
-  }
-  if (Object.keys(productoFiltro).length > 0) {
-    where.producto = productoFiltro;
-  }
-  if (comercioId) {
-    where.comercioId = comercioId;
-  }
-  if (tokens.length > 0) {
-    where.AND = tokens.map((token) => ({
-      OR: [
-        { producto: { busqueda: { contains: token } } },
-        { producto: { nombre: { contains: token, mode: "insensitive" } } },
-        { producto: { marca: { contains: token, mode: "insensitive" } } },
-        { comercio: { nombre: { contains: token, mode: "insensitive" } } },
-      ],
-    }));
-  }
-
-  const ofertas = await prisma.oferta.findMany({
-    where,
-    include: {
-      producto: { include: { categoria: true, subcategoria: true } },
-      comercio: {
-        select: { id: true, nombre: true, direccion: true },
-      },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 60,
+  const ofertas = await buscarOfertasPublicas({
+    q,
+    categoria,
+    subcategoria,
+    comercioId,
   });
 
   const subcategoriasDisponibles = categoria
