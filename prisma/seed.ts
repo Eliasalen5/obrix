@@ -7,6 +7,7 @@ import {
   categorias,
   comerciosDemo,
   productosBase,
+  subcategorias,
   type ComercioSeed,
 } from "./catalogo.seed-data";
 
@@ -135,11 +136,32 @@ async function main() {
   const catMap = new Map(
     (await prisma.categoria.findMany()).map((c) => [c.nombre, c.id]),
   );
+
+  let subcategoriasCreadas = 0;
+  for (const s of subcategorias) {
+    const categoriaId = catMap.get(s.categoria);
+    if (!categoriaId) continue;
+    await prisma.subcategoria.upsert({
+      where: { categoriaId_nombre: { categoriaId, nombre: s.nombre } },
+      create: { categoriaId, nombre: s.nombre, orden: s.orden },
+      update: { orden: s.orden },
+    });
+    subcategoriasCreadas++;
+  }
+
+  const subcatMap = new Map(
+    (await prisma.subcategoria.findMany()).map((s) => [
+      `${s.categoriaId}::${s.nombre}`,
+      s.id,
+    ]),
+  );
+
   let created = 0;
   for (const p of productosBase) {
     const cid = catMap.get(p.categoria);
     if (!cid) continue;
     const busqueda = construirBusquedaProducto(p);
+    const subcategoriaId = subcatMap.get(`${cid}::${p.subcategoria}`) ?? null;
     await prisma.producto.upsert({
       where: { sku: p.sku },
       create: {
@@ -149,6 +171,7 @@ async function main() {
         descripcion: p.descripcion,
         busqueda,
         categoriaId: cid,
+        subcategoriaId,
       },
       update: {
         nombre: p.nombre,
@@ -156,6 +179,7 @@ async function main() {
         descripcion: p.descripcion,
         busqueda,
         categoriaId: cid,
+        subcategoriaId,
       },
     });
     created++;
@@ -170,7 +194,7 @@ async function main() {
     ...comerciosDemo.map((c) => c.email),
   ];
   console.log(
-    `Seed OK: ${2 + comerciosDemo.length} usuarios demo (admin + cliente + ${comerciosDemo.length} comercios), ${created} productos, ${categorias.length} categorías, ${ofertasCreadas} ofertas`,
+    `Seed OK: ${2 + comerciosDemo.length} usuarios demo (admin + cliente + ${comerciosDemo.length} comercios), ${created} productos, ${categorias.length} categorías, ${subcategoriasCreadas} subcategorías, ${ofertasCreadas} ofertas`,
   );
   console.log(
     `Login demo (password: ${DEMO_PASSWORD}): ${logins.join(" | ")}`,

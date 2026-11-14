@@ -57,8 +57,10 @@ function linkCategoria(nombre: string) {
   return `/ofertas?categoria=${encodeURIComponent(nombre)}`;
 }
 
-function linkBusqueda(texto: string) {
-  return `/ofertas?q=${encodeURIComponent(texto)}`;
+function linkSubcategoria(categoria: string, subcategoria: string) {
+  return `/ofertas?categoria=${encodeURIComponent(
+    categoria,
+  )}&subcategoria=${encodeURIComponent(subcategoria)}`;
 }
 
 function Icon({
@@ -153,7 +155,9 @@ export default function NavBar() {
     const texto = consulta.trim();
     setBusquedaOpen(false);
     setMenuOpen(false);
-    router.push(texto ? linkBusqueda(texto) : "/ofertas");
+    router.push(
+      texto ? `/ofertas?q=${encodeURIComponent(texto)}` : "/ofertas",
+    );
   }
 
   function abrirBusqueda() {
@@ -244,7 +248,10 @@ export default function NavBar() {
                           {categoria.subcategorias.map((subcategoria) => (
                             <Link
                               key={subcategoria}
-                              href={linkBusqueda(subcategoria)}
+                              href={linkSubcategoria(
+                                categoria.nombre,
+                                subcategoria,
+                              )}
                               className="text-xs text-neutral-500 transition-colors hover:text-obrix-orange"
                             >
                               {subcategoria}
@@ -583,7 +590,10 @@ export default function NavBar() {
                           {categoria.subcategorias.map((subcategoria) => (
                             <Link
                               key={subcategoria}
-                              href={linkBusqueda(subcategoria)}
+                              href={linkSubcategoria(
+                                categoria.nombre,
+                                subcategoria,
+                              )}
                               className="rounded-full bg-obrix-gray px-2 py-1 text-xs text-neutral-700 hover:text-obrix-black"
                             >
                               {subcategoria}

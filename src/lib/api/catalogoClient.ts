@@ -8,10 +8,18 @@ import type {
 
 export type { ApiResult, ApiErrorDetail } from "./httpClient";
 
+export type Subcategoria = {
+  id: string;
+  nombre: string;
+  orden: number;
+  categoriaId: string;
+};
+
 export type Categoria = {
   id: string;
   nombre: string;
   orden: number;
+  subcategorias?: Subcategoria[];
 };
 
 export type Producto = {
@@ -22,6 +30,8 @@ export type Producto = {
   descripcion: string;
   categoriaId: string;
   categoria?: Categoria;
+  subcategoriaId?: string | null;
+  subcategoria?: Subcategoria | null;
   codigoBarras?: string | null;
   fabricante?: string;
   codigoFabricante?: string | null;

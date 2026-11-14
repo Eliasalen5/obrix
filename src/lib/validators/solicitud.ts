@@ -23,6 +23,11 @@ export const propuestaProductoSchema = z.object({
     .min(2, "Nombre requerido (mínimo 2 caracteres)")
     .max(120, "Máximo 120 caracteres"),
   categoriaId: z.string().trim().min(1, "Categoría requerida"),
+  subcategoriaId: z.preprocess(
+    (valor) =>
+      typeof valor === "string" && valor.trim() === "" ? undefined : valor,
+    z.string().trim().max(40, "Máximo 40 caracteres").optional(),
+  ),
   unidad: z
     .string()
     .trim()

@@ -94,4 +94,17 @@ describe("validación catálogo — Producto", () => {
   it("update permite objeto vacío (parcial)", () => {
     expect(updateProductoSchema.safeParse({}).success).toBe(true);
   });
+
+  it("normaliza subcategoriaId vacío a undefined", () => {
+    const parsed = createProductoSchema.parse({ ...base, subcategoriaId: "  " });
+    expect(parsed.subcategoriaId).toBeUndefined();
+  });
+
+  it("acepta subcategoriaId válido", () => {
+    const parsed = createProductoSchema.parse({
+      ...base,
+      subcategoriaId: "sub_1",
+    });
+    expect(parsed.subcategoriaId).toBe("sub_1");
+  });
 });

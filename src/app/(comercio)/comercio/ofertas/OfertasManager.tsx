@@ -37,6 +37,7 @@ type EditForm = {
 type PropuestaForm = {
   nombre: string;
   categoriaId: string;
+  subcategoriaId: string;
   unidad: string;
   marca: string;
   fabricante: string;
@@ -53,6 +54,7 @@ const EDIT_VACIO: EditForm = { precio: "", stock: "", marca: "", activo: true };
 const PROPUESTA_VACIA: PropuestaForm = {
   nombre: "",
   categoriaId: "",
+  subcategoriaId: "",
   unidad: "",
   marca: "",
   fabricante: "",
@@ -98,6 +100,7 @@ export default function OfertasManager() {
   const [busqueda, setBusqueda] = useState("");
   const [busquedaDebounced, setBusquedaDebounced] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroSubcategoria, setFiltroSubcategoria] = useState("");
   const [offset, setOffset] = useState(0);
   const [busquedaOfertas, setBusquedaOfertas] = useState("");
 
@@ -135,6 +138,7 @@ export default function OfertasManager() {
       const res = await ofertaApi.listCatalogo({
         q: busquedaDebounced,
         categoriaId: filtroCategoria,
+        subcategoriaId: filtroSubcategoria,
         limit: PAGE_SIZE,
         offset,
         signal,
@@ -148,7 +152,7 @@ export default function OfertasManager() {
       }
       setCargandoCatalogo(false);
     },
-    [busquedaDebounced, filtroCategoria, offset],
+    [busquedaDebounced, filtroCategoria, filtroSubcategoria, offset],
   );
 
   useEffect(() => {
@@ -180,7 +184,16 @@ export default function OfertasManager() {
     return mapa;
   }, [ofertas]);
 
-  const hayFiltroCatalogo = busqueda.trim() !== "" || filtroCategoria !== "";
+  const subcategoriasDe = useCallback(
+    (categoriaId: string) =>
+      categorias.find((c) => c.id === categoriaId)?.subcategorias ?? [],
+    [categorias],
+  );
+
+  const hayFiltroCatalogo =
+    busqueda.trim() !== "" ||
+    filtroCategoria !== "" ||
+    filtroSubcategoria !== "";
 
   const ofertasVisibles = useMemo(() => {
     const q = normalizarTexto(busquedaOfertas);
@@ -283,6 +296,7 @@ export default function OfertasManager() {
     const candidata: PropuestaProductoInput = {
       nombre: propuesta.nombre,
       categoriaId: propuesta.categoriaId,
+      subcategoriaId: propuesta.subcategoriaId,
       unidad: propuesta.unidad,
       marca: propuesta.marca,
       fabricante: propuesta.fabricante,
@@ -495,6 +509,7 @@ export default function OfertasManager() {
             value={filtroCategoria}
             onChange={(e) => {
               setFiltroCategoria(e.target.value);
+              setFiltroSubcategoria("");
               setOffset(0);
             }}
           >
@@ -502,6 +517,22 @@ export default function OfertasManager() {
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
+              </option>
+            ))}
+          </select>
+          <select
+            className={inputCls}
+            value={filtroSubcategoria}
+            onChange={(e) => {
+              setFiltroSubcategoria(e.target.value);
+              setOffset(0);
+            }}
+            disabled={!filtroCategoria}
+          >
+            <option value="">Todas las subcategorías</option>
+            {subcategoriasDe(filtroCategoria).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nombre}
               </option>
             ))}
           </select>
@@ -514,6 +545,7 @@ export default function OfertasManager() {
               onClick={() => {
                 setBusqueda("");
                 setFiltroCategoria("");
+                setFiltroSubcategoria("");
                 setOffset(0);
               }}
               className="text-sm text-blue-600 hover:underline"
@@ -527,6 +559,7 @@ export default function OfertasManager() {
             <tr className="border-b text-left">
               <th className="py-1 pr-2">SKU</th>
               <th className="py-1 pr-2">Producto</th>
+              <th className="py-1 pr-2">Subcategoría</th>
               <th className="py-1 pr-2">Estado</th>
               <th className="py-1" />
             </tr>
@@ -538,6 +571,7 @@ export default function OfertasManager() {
                 <tr key={p.id} className="border-b">
                   <td className="py-1 pr-2">{p.sku}</td>
                   <td className="py-1 pr-2">{p.nombre}</td>
+                  <td className="py-1 pr-2">{p.subcategoria?.nombre ?? "—"}</td>
                   <td className="py-1 pr-2">
                     <input
                       placeholder="Precio"
@@ -588,6 +622,7 @@ export default function OfertasManager() {
                 <tr key={p.id} className="border-b">
                   <td className="py-1 pr-2">{p.sku}</td>
                   <td className="py-1 pr-2">{p.nombre}</td>
+                  <td className="py-1 pr-2">{p.subcategoria?.nombre ?? "—"}</td>
                   <td className="py-1 pr-2">{yaActivado ? "Activado" : "—"}</td>
                   <td className="py-1">
                     {yaActivado ? (
@@ -609,7 +644,7 @@ export default function OfertasManager() {
             })}
             {productos.length === 0 && !cargandoCatalogo && (
               <tr>
-                <td colSpan={4} className="py-2 text-gray-500">
+                <td colSpan={5} className="py-2 text-gray-500">
                   {hayFiltroCatalogo ? (
                     <span>
                       Sin resultados para esa búsqueda.{" "}
@@ -680,13 +715,38 @@ export default function OfertasManager() {
                   className={inputCls}
                   value={propuesta.categoriaId}
                   onChange={(e) =>
-                    setPropuesta({ ...propuesta, categoriaId: e.target.value })
+                    setPropuesta({
+                      ...propuesta,
+                      categoriaId: e.target.value,
+                      subcategoriaId: "",
+                    })
                   }
                 >
                   <option value="">Elegí una categoría</option>
                   {categorias.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col text-sm">
+                Subcategoría
+                <select
+                  className={inputCls}
+                  value={propuesta.subcategoriaId}
+                  onChange={(e) =>
+                    setPropuesta({
+                      ...propuesta,
+                      subcategoriaId: e.target.value,
+                    })
+                  }
+                  disabled={!propuesta.categoriaId}
+                >
+                  <option value="">Sin subcategoría</option>
+                  {subcategoriasDe(propuesta.categoriaId).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre}
                     </option>
                   ))}
                 </select>

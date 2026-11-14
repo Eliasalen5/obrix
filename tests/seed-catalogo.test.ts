@@ -4,6 +4,7 @@ import {
   categorias,
   comerciosDemo,
   productosBase,
+  subcategorias,
 } from "../prisma/catalogo.seed-data";
 
 const SKU_RE = /^OBR-\d{3}$/;
@@ -39,11 +40,41 @@ describe("catálogo semilla: categorías", () => {
   });
 });
 
+describe("catálogo semilla: subcategorías", () => {
+  it("cada categoría tiene subcategorías y todas referencian una categoría válida", () => {
+    const catNames = new Set(categorias.map((c) => c.nombre));
+    const huerfanas = subcategorias
+      .filter((s) => !catNames.has(s.categoria))
+      .map((s) => `${s.categoria}: ${s.nombre}`);
+    expect(huerfanas).toEqual([]);
+
+    const sinSubcategorias = categorias
+      .filter((c) => !subcategorias.some((s) => s.categoria === c.nombre))
+      .map((c) => c.nombre);
+    expect(sinSubcategorias).toEqual([]);
+  });
+
+  it("no repite subcategorías dentro de una misma categoría", () => {
+    const claves = subcategorias.map((s) => `${s.categoria}::${s.nombre}`);
+    expect(new Set(claves).size).toBe(claves.length);
+  });
+});
+
 describe("catálogo semilla: productos", () => {
   it("no repite SKUs y todos respetan el formato OBR-###", () => {
     const skus = productosBase.map((p) => p.sku);
     expect(new Set(skus).size).toBe(skus.length);
     expect(skus.filter((sku) => !SKU_RE.test(sku))).toEqual([]);
+  });
+
+  it("todo producto apunta a una subcategoría de su propia categoría", () => {
+    const validas = new Set(
+      subcategorias.map((s) => `${s.categoria}::${s.nombre}`),
+    );
+    const invalidas = productosBase
+      .filter((p) => !validas.has(`${p.categoria}::${p.subcategoria}`))
+      .map((p) => `${p.sku}: ${p.categoria} → ${p.subcategoria}`);
+    expect(invalidas).toEqual([]);
   });
 
   it("no deja huecos en la numeración de los SKUs", () => {
@@ -71,13 +102,14 @@ describe("catálogo semilla: productos", () => {
     expect(repetidos).toEqual([]);
   });
 
-  it("cada producto tiene nombre, unidad y descripción", () => {
+  it("cada producto tiene nombre, unidad, descripción y subcategoría", () => {
     const incompletos = productosBase
       .filter(
         (p) =>
           p.nombre.trim() === "" ||
           p.unidad.trim() === "" ||
-          p.descripcion.trim() === "",
+          p.descripcion.trim() === "" ||
+          p.subcategoria.trim() === "",
       )
       .map((p) => p.sku);
     expect(incompletos).toEqual([]);

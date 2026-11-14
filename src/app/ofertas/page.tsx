@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { CATEGORIAS } from "@/lib/catalogo/categorias";
+import { CATEGORIAS, subcategoriasDe } from "@/lib/catalogo/categorias";
 import { normalizarClave } from "@/lib/text/busqueda";
 import type { Prisma } from "@/generated/prisma/client";
 import OfertaCard from "./OfertaCard";
@@ -18,6 +18,7 @@ type Props = {
   searchParams: Promise<{
     q?: string | string[];
     categoria?: string | string[];
+    subcategoria?: string | string[];
     comercioId?: string | string[];
   }>;
 };
@@ -29,11 +30,13 @@ function primerValor(valor: string | string[] | undefined) {
 function hrefFiltros(filtros: {
   q?: string;
   categoria?: string;
+  subcategoria?: string;
   comercioId?: string;
 }) {
   const params = new URLSearchParams();
   if (filtros.q) params.set("q", filtros.q);
   if (filtros.categoria) params.set("categoria", filtros.categoria);
+  if (filtros.subcategoria) params.set("subcategoria", filtros.subcategoria);
   if (filtros.comercioId) params.set("comercioId", filtros.comercioId);
   const query = params.toString();
   return query ? `/ofertas?${query}` : "/ofertas";
@@ -43,6 +46,7 @@ export default async function OfertasPage({ searchParams }: Props) {
   const params = await searchParams;
   const q = primerValor(params.q).trim();
   const categoria = primerValor(params.categoria).trim();
+  const subcategoria = primerValor(params.subcategoria).trim();
   const comercioId = primerValor(params.comercioId).trim();
 
   const tokens = [...new Set(normalizarClave(q).split(" ").filter(Boolean))];
@@ -52,10 +56,19 @@ export default async function OfertasPage({ searchParams }: Props) {
     comercio: { activo: true },
   };
 
+  const productoFiltro: Prisma.ProductoWhereInput = {};
   if (categoria) {
-    where.producto = {
-      categoria: { nombre: { equals: categoria, mode: "insensitive" } },
+    productoFiltro.categoria = {
+      nombre: { equals: categoria, mode: "insensitive" },
     };
+  }
+  if (subcategoria) {
+    productoFiltro.subcategoria = {
+      nombre: { equals: subcategoria, mode: "insensitive" },
+    };
+  }
+  if (Object.keys(productoFiltro).length > 0) {
+    where.producto = productoFiltro;
   }
   if (comercioId) {
     where.comercioId = comercioId;
@@ -74,7 +87,7 @@ export default async function OfertasPage({ searchParams }: Props) {
   const ofertas = await prisma.oferta.findMany({
     where,
     include: {
-      producto: { include: { categoria: true } },
+      producto: { include: { categoria: true, subcategoria: true } },
       comercio: {
         select: { id: true, nombre: true, direccion: true },
       },
@@ -83,12 +96,17 @@ export default async function OfertasPage({ searchParams }: Props) {
     take: 60,
   });
 
-  const hayFiltros = Boolean(q || categoria || comercioId);
+  const subcategoriasDisponibles = categoria
+    ? subcategoriasDe(categoria)
+    : [];
+  const hayFiltros = Boolean(q || categoria || subcategoria || comercioId);
   const titulo = q
     ? `Resultados para “${q}”`
-    : categoria
-      ? categoria
-      : "Ofertas de materiales";
+    : subcategoria
+      ? subcategoria
+      : categoria
+        ? categoria
+        : "Ofertas de materiales";
 
   return (
     <main className="flex-1 bg-obrix-white text-obrix-black">
@@ -124,6 +142,9 @@ export default async function OfertasPage({ searchParams }: Props) {
           className="mt-6 flex flex-col gap-2 sm:flex-row"
         >
           {categoria && <input type="hidden" name="categoria" value={categoria} />}
+          {subcategoria && (
+            <input type="hidden" name="subcategoria" value={subcategoria} />
+          )}
           {comercioId && (
             <input type="hidden" name="comercioId" value={comercioId} />
           )}
@@ -175,6 +196,43 @@ export default async function OfertasPage({ searchParams }: Props) {
             );
           })}
         </div>
+
+        {subcategoriasDisponibles.length > 0 && (
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
+            <Link
+              href={hrefFiltros({ q, categoria, comercioId })}
+              className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                !subcategoria
+                  ? "border-obrix-orange bg-obrix-orange/10 font-semibold text-obrix-black"
+                  : "border-neutral-200 text-neutral-600 hover:border-obrix-orange hover:bg-obrix-gray"
+              }`}
+            >
+              Todas
+            </Link>
+            {subcategoriasDisponibles.map((nombre) => {
+              const activa =
+                subcategoria.toLowerCase() === nombre.toLowerCase();
+              return (
+                <Link
+                  key={nombre}
+                  href={hrefFiltros({
+                    q,
+                    categoria,
+                    subcategoria: nombre,
+                    comercioId,
+                  })}
+                  className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                    activa
+                      ? "border-obrix-orange bg-obrix-orange/10 font-semibold text-obrix-black"
+                      : "border-neutral-200 text-neutral-600 hover:border-obrix-orange hover:bg-obrix-gray"
+                  }`}
+                >
+                  {nombre}
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
         {ofertas.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-neutral-200 bg-obrix-gray p-8 text-center">

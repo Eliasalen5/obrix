@@ -3,10 +3,10 @@ import type {
   CreateOfertaInput,
   UpdateOfertaInput,
 } from "@/lib/validators/oferta";
-import type { Categoria, Producto } from "./catalogoClient";
+import type { Categoria, Producto, Subcategoria } from "./catalogoClient";
 
 export type { ApiResult, ApiErrorDetail } from "./httpClient";
-export type { Producto, Categoria } from "./catalogoClient";
+export type { Producto, Categoria, Subcategoria } from "./catalogoClient";
 
 export type Oferta = {
   id: string;
@@ -33,6 +33,7 @@ export const ofertaApi = {
   listCatalogo: (opts?: {
     q?: string;
     categoriaId?: string;
+    subcategoriaId?: string;
     limit?: number;
     offset?: number;
     signal?: AbortSignal;
@@ -40,6 +41,7 @@ export const ofertaApi = {
     const params = new URLSearchParams();
     if (opts?.q) params.set("q", opts.q);
     if (opts?.categoriaId) params.set("categoriaId", opts.categoriaId);
+    if (opts?.subcategoriaId) params.set("subcategoriaId", opts.subcategoriaId);
     if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
     if (opts?.offset !== undefined) params.set("offset", String(opts.offset));
     const qs = params.toString();

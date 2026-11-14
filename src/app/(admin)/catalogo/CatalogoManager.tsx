@@ -29,6 +29,7 @@ const VACIO_PROD = {
   unidad: "",
   descripcion: "",
   categoriaId: "",
+  subcategoriaId: "",
 };
 
 type CatForm = typeof VACIO_CAT;
@@ -50,6 +51,7 @@ export default function CatalogoManager() {
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroSubcategoria, setFiltroSubcategoria] = useState("");
 
   const [catForm, setCatForm] = useState<CatForm>(VACIO_CAT);
   const [catEditId, setCatEditId] = useState<string | null>(null);
@@ -146,6 +148,7 @@ export default function CatalogoManager() {
       unidad: prodForm.unidad,
       descripcion: prodForm.descripcion,
       categoriaId: prodForm.categoriaId,
+      subcategoriaId: prodForm.subcategoriaId,
     });
     if (!parsed.success) {
       setMensaje({ tipo: "error", texto: issuesToText(parsed.error) });
@@ -165,6 +168,7 @@ export default function CatalogoManager() {
       unidad: prodEdit.unidad,
       descripcion: prodEdit.descripcion,
       categoriaId: prodEdit.categoriaId,
+      subcategoriaId: prodEdit.subcategoriaId,
     });
     if (!parsed.success) {
       setMensaje({ tipo: "error", texto: issuesToText(parsed.error) });
@@ -185,19 +189,30 @@ export default function CatalogoManager() {
     await reportar(catalogoApi.deleteProducto(id), "Producto eliminado");
   }
 
+  const subcategoriasDe = useCallback(
+    (categoriaId: string) =>
+      categorias.find((c) => c.id === categoriaId)?.subcategorias ?? [],
+    [categorias],
+  );
+
   const productosVisibles = useMemo(() => {
     const q = normalizarTexto(busqueda);
     return productos.filter((p) => {
       if (filtroCategoria && p.categoriaId !== filtroCategoria) return false;
+      if (filtroSubcategoria && p.subcategoriaId !== filtroSubcategoria)
+        return false;
       if (q === "") return true;
       const haystack = normalizarTexto(
         `${p.sku} ${p.nombre} ${p.unidad} ${p.descripcion}`,
       );
       return haystack.includes(q);
     });
-  }, [productos, busqueda, filtroCategoria]);
+  }, [productos, busqueda, filtroCategoria, filtroSubcategoria]);
 
-  const hayFiltro = busqueda.trim() !== "" || filtroCategoria !== "";
+  const hayFiltro =
+    busqueda.trim() !== "" ||
+    filtroCategoria !== "" ||
+    filtroSubcategoria !== "";
 
   return (
     <div className="mt-6 flex flex-col gap-10">
@@ -359,13 +374,32 @@ export default function CatalogoManager() {
             className={inputCls}
             value={prodForm.categoriaId}
             onChange={(e) =>
-              setProdForm({ ...prodForm, categoriaId: e.target.value })
+              setProdForm({
+                ...prodForm,
+                categoriaId: e.target.value,
+                subcategoriaId: "",
+              })
             }
           >
             <option value="">— Elegí categoría —</option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
+              </option>
+            ))}
+          </select>
+          <select
+            className={inputCls}
+            value={prodForm.subcategoriaId}
+            onChange={(e) =>
+              setProdForm({ ...prodForm, subcategoriaId: e.target.value })
+            }
+            disabled={!prodForm.categoriaId}
+          >
+            <option value="">— Subcategoría (opcional) —</option>
+            {subcategoriasDe(prodForm.categoriaId).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nombre}
               </option>
             ))}
           </select>
@@ -387,12 +421,28 @@ export default function CatalogoManager() {
           <select
             className={inputCls}
             value={filtroCategoria}
-            onChange={(e) => setFiltroCategoria(e.target.value)}
+            onChange={(e) => {
+              setFiltroCategoria(e.target.value);
+              setFiltroSubcategoria("");
+            }}
           >
             <option value="">Todas las categorías</option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
+              </option>
+            ))}
+          </select>
+          <select
+            className={inputCls}
+            value={filtroSubcategoria}
+            onChange={(e) => setFiltroSubcategoria(e.target.value)}
+            disabled={!filtroCategoria}
+          >
+            <option value="">Todas las subcategorías</option>
+            {subcategoriasDe(filtroCategoria).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nombre}
               </option>
             ))}
           </select>
@@ -405,6 +455,7 @@ export default function CatalogoManager() {
               onClick={() => {
                 setBusqueda("");
                 setFiltroCategoria("");
+                setFiltroSubcategoria("");
               }}
               className="text-sm text-blue-600 hover:underline"
             >
@@ -423,6 +474,7 @@ export default function CatalogoManager() {
                 <th className="py-2 pr-3">Nombre</th>
                 <th className="py-2 pr-3">Unidad</th>
                 <th className="py-2 pr-3">Categoría</th>
+                <th className="py-2 pr-3">Subcategoría</th>
                 <th className="py-2 pr-3">Acciones</th>
               </tr>
             </thead>
@@ -468,12 +520,32 @@ export default function CatalogoManager() {
                           setProdEdit({
                             ...prodEdit,
                             categoriaId: e.target.value,
+                            subcategoriaId: "",
                           })
                         }
                       >
                         {categorias.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="py-2 pr-3">
+                      <select
+                        className={inputCls}
+                        value={prodEdit.subcategoriaId}
+                        onChange={(e) =>
+                          setProdEdit({
+                            ...prodEdit,
+                            subcategoriaId: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">—</option>
+                        {subcategoriasDe(prodEdit.categoriaId).map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.nombre}
                           </option>
                         ))}
                       </select>
@@ -508,6 +580,9 @@ export default function CatalogoManager() {
                     <td className="py-2 pr-3">{p.unidad}</td>
                     <td className="py-2 pr-3">{p.categoria?.nombre ?? "—"}</td>
                     <td className="py-2 pr-3">
+                      {p.subcategoria?.nombre ?? "—"}
+                    </td>
+                    <td className="py-2 pr-3">
                       <button
                         type="button"
                         onClick={() => {
@@ -518,6 +593,7 @@ export default function CatalogoManager() {
                             unidad: p.unidad,
                             descripcion: p.descripcion,
                             categoriaId: p.categoriaId,
+                            subcategoriaId: p.subcategoriaId ?? "",
                           });
                         }}
                         className="mr-3 text-blue-600 hover:underline"
@@ -537,7 +613,7 @@ export default function CatalogoManager() {
               )}
               {productosVisibles.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-2 text-zinc-500">
+                  <td colSpan={6} className="py-2 text-zinc-500">
                     {hayFiltro
                       ? "Sin resultados para esa búsqueda."
                       : "Sin productos."}

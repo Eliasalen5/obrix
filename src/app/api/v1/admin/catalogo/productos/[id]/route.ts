@@ -2,7 +2,10 @@ import type { NextRequest } from "next/server";
 import { requireAdminApi } from "@/lib/auth/apiAuth";
 import { jsonError, prismaErrorResponse, zodDetails } from "@/lib/api/http";
 import { updateProductoSchema } from "@/lib/validators/catalogo";
-import { productoService } from "@/lib/services/catalogo.service";
+import {
+  CatalogoError,
+  productoService,
+} from "@/lib/services/catalogo.service";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -35,6 +38,9 @@ export async function PATCH(request: NextRequest, { params }: Context) {
     const data = await productoService.update(id, parsed.data);
     return Response.json({ data });
   } catch (error) {
+    if (error instanceof CatalogoError) {
+      return jsonError(error.status, error.message);
+    }
     return prismaErrorResponse(error);
   }
 }

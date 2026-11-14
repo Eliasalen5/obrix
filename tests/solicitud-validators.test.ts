@@ -60,6 +60,14 @@ describe("propuestaProductoSchema", () => {
     expect(res.success).toBe(false);
   });
 
+  it("normaliza subcategoriaId vacío a undefined", () => {
+    const parsed = propuestaProductoSchema.parse({
+      ...propuestaValida,
+      subcategoriaId: "",
+    });
+    expect(parsed.subcategoriaId).toBeUndefined();
+  });
+
   it("rechaza código de barras con caracteres inválidos", () => {
     const res = propuestaProductoSchema.safeParse({
       ...propuestaValida,

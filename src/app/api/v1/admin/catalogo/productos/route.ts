@@ -2,7 +2,10 @@ import type { NextRequest } from "next/server";
 import { requireAdminApi } from "@/lib/auth/apiAuth";
 import { jsonError, prismaErrorResponse, zodDetails } from "@/lib/api/http";
 import { createProductoSchema } from "@/lib/validators/catalogo";
-import { productoService } from "@/lib/services/catalogo.service";
+import {
+  CatalogoError,
+  productoService,
+} from "@/lib/services/catalogo.service";
 
 export async function GET() {
   const access = await requireAdminApi();
@@ -30,6 +33,9 @@ export async function POST(request: NextRequest) {
     const data = await productoService.create(parsed.data);
     return Response.json({ data }, { status: 201 });
   } catch (error) {
+    if (error instanceof CatalogoError) {
+      return jsonError(error.status, error.message);
+    }
     return prismaErrorResponse(error);
   }
 }

@@ -53,7 +53,7 @@ describe("productoService.search", () => {
           { busqueda: { contains: "kg" } },
         ],
       },
-      include: { categoria: true },
+      include: { categoria: true, subcategoria: true },
       orderBy: { nombre: "asc" },
       skip: 50,
       take: 25,
@@ -77,6 +77,21 @@ describe("productoService.search", () => {
       expect.objectContaining({ where: {} }),
     );
   });
+
+  it("filtra por subcategoría además de la categoría", async () => {
+    await productoService.search({
+      categoriaId: "c1",
+      subcategoriaId: "s1",
+      limit: 50,
+      offset: 0,
+    });
+
+    expect(mocks.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { categoriaId: "c1", subcategoriaId: "s1" },
+      }),
+    );
+  });
 });
 
 describe("productoService.create/update", () => {
@@ -95,7 +110,7 @@ describe("productoService.create/update", () => {
       data: expect.objectContaining({
         busqueda: "cemento portland obr 002 bolsa 50 kg",
       }),
-      include: { categoria: true },
+      include: { categoria: true, subcategoria: true },
     });
   });
 
@@ -111,7 +126,7 @@ describe("productoService.create/update", () => {
         nombre: "Cemento gris",
         busqueda: expect.stringContaining("cemento gris"),
       }),
-      include: { categoria: true },
+      include: { categoria: true, subcategoria: true },
     });
     const data = mocks.update.mock.calls[0][0].data;
     expect(data.busqueda).toContain("loma negra");

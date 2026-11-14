@@ -12,51 +12,69 @@ datasource db {
 }
 
 model Usuario {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String
-  nombre       String
-  rol          String     @default("CLIENTE") // ADMIN | COMERCIO | CLIENTE
-  tokenVersion Int        @default(0) // revoca tokens/sesiones al incrementar
-  createdAt    DateTime   @default(now())
-  comercio     Comercio?
-  cotizaciones Cotizacion[]
-  pedidos      Pedido[]
-  solicitudesRevisadas SolicitudProducto[]
-  solicitudesAltaRevisadas SolicitudAltaComercio[]
-  solicitudesAltaSolicitante SolicitudAltaComercio? @relation("SolicitudAltaSolicitante")
+  id                         String                  @id @default(cuid())
+  email                      String                  @unique
+  passwordHash               String
+  nombre                     String
+  rol                        String                  @default("CLIENTE") // ADMIN | COMERCIO | CLIENTE
+  tokenVersion               Int                     @default(0) // revoca tokens/sesiones al incrementar
+  createdAt                  DateTime                @default(now())
+  comercio                   Comercio?
+  cotizaciones               Cotizacion[]
+  pedidos                    Pedido[]
+  solicitudesRevisadas       SolicitudProducto[]
+  solicitudesAltaRevisadas   SolicitudAltaComercio[]
+  solicitudesAltaSolicitante SolicitudAltaComercio?  @relation("SolicitudAltaSolicitante")
 }
 
 model Categoria {
-  id        String     @id @default(cuid())
-  nombre    String     @unique
-  orden     Int        @default(0)
-  productos Producto[]
+  id            String         @id @default(cuid())
+  nombre        String         @unique
+  orden         Int            @default(0)
+  productos     Producto[]
+  subcategorias Subcategoria[]
+}
+
+// Segundo nivel del catálogo: agrupa productos dentro de una categoría.
+// Se siembra desde `src/lib/catalogo/categorias.ts` y se usa para filtrar ofertas.
+model Subcategoria {
+  id          String     @id @default(cuid())
+  nombre      String
+  orden       Int        @default(0)
+  categoriaId String
+  categoria   Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  productos   Producto[]
+
+  @@unique([categoriaId, nombre])
+  @@index([categoriaId])
 }
 
 model Producto {
-  id          String            @id @default(cuid())
-  sku         String            @unique
-  nombre      String
-  unidad      String // "bolsa 50 kg", "unidad", "m", "litro", "m²", ...
-  descripcion String            @default("")
+  id               String               @id @default(cuid())
+  sku              String               @unique
+  nombre           String
+  unidad           String // "bolsa 50 kg", "unidad", "m", "litro", "m²", ...
+  descripcion      String               @default("")
   // Texto normalizado (sin acentos, minúsculas) para búsquedas indexables.
-  busqueda    String            @default("")
+  busqueda         String               @default("")
   // Identificación canónica para detección de duplicados (catálogo maestro)
-  codigoBarras    String?   @unique // identificador confiable cuando existe
-  fabricante      String    @default("")
+  codigoBarras     String?              @unique // identificador confiable cuando existe
+  fabricante       String               @default("")
   codigoFabricante String?
-  marca           String    @default("") // marca canónica del producto maestro
-  atributos       Json?     // medidas, peso, dimensiones, etc. (variables)
-  categoriaId String
-  categoria   Categoria         @relation(fields: [categoriaId], references: [id])
-  ofertas     Oferta[]
-  itemsPedido ItemPedido[]
-  materiales  MaterialCotizacion[]
-  solicitudes SolicitudProducto[]
-  createdAt   DateTime          @default(now())
+  marca            String               @default("") // marca canónica del producto maestro
+  atributos        Json? // medidas, peso, dimensiones, etc. (variables)
+  categoriaId      String
+  categoria        Categoria            @relation(fields: [categoriaId], references: [id])
+  subcategoriaId   String?
+  subcategoria     Subcategoria?        @relation(fields: [subcategoriaId], references: [id])
+  ofertas          Oferta[]
+  itemsPedido      ItemPedido[]
+  materiales       MaterialCotizacion[]
+  solicitudes      SolicitudProducto[]
+  createdAt        DateTime             @default(now())
 
   @@index([categoriaId])
+  @@index([subcategoriaId])
 }
 
 // Propuesta de un comercio para incorporar un producto al catálogo maestro.
@@ -84,20 +102,20 @@ model SolicitudProducto {
 }
 
 model Comercio {
-  id        String    @id @default(cuid())
-  nombre    String
-  direccion String
-  lat       Float
-  lng       Float
-  telefono  String    @default("")
-  activo    Boolean   @default(true)
-  ownerId   String    @unique
-  owner     Usuario   @relation(fields: [ownerId], references: [id])
-  ofertas   Oferta[]
-  pedidos   Pedido[]
-  solicitudes SolicitudProducto[]
+  id            String                 @id @default(cuid())
+  nombre        String
+  direccion     String
+  lat           Float
+  lng           Float
+  telefono      String                 @default("")
+  activo        Boolean                @default(true)
+  ownerId       String                 @unique
+  owner         Usuario                @relation(fields: [ownerId], references: [id])
+  ofertas       Oferta[]
+  pedidos       Pedido[]
+  solicitudes   SolicitudProducto[]
   solicitudAlta SolicitudAltaComercio?
-  createdAt DateTime  @default(now())
+  createdAt     DateTime               @default(now())
 }
 
 model Oferta {
@@ -117,15 +135,15 @@ model Oferta {
 }
 
 model Cotizacion {
-  id        String              @id @default(cuid())
-  prompt    String // lo que pidió el usuario
-  estado    String              @default("BORRADOR") // BORRADOR | ENVIADA | COMPARADA
-  clienteId String?
-  cliente   Usuario?            @relation(fields: [clienteId], references: [id])
-  materiales MaterialCotizacion[]
-  pedidos   Pedido[]
+  id            String               @id @default(cuid())
+  prompt        String // lo que pidió el usuario
+  estado        String               @default("BORRADOR") // BORRADOR | ENVIADA | COMPARADA
+  clienteId     String?
+  cliente       Usuario?             @relation(fields: [clienteId], references: [id])
+  materiales    MaterialCotizacion[]
+  pedidos       Pedido[]
   resultadoJson String? // snapshot de la comparación al momento de cotizar (inmutable)
-  createdAt DateTime            @default(now())
+  createdAt     DateTime             @default(now())
 }
 
 model MaterialCotizacion {
@@ -154,12 +172,12 @@ model Pedido {
 }
 
 model ItemPedido {
-  id            String   @id @default(cuid())
-  pedidoId      String
-  pedido        Pedido   @relation(fields: [pedidoId], references: [id])
-  productoId    String
-  producto      Producto @relation(fields: [productoId], references: [id])
-  cantidad      Float
+  id             String   @id @default(cuid())
+  pedidoId       String
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id])
+  productoId     String
+  producto       Producto @relation(fields: [productoId], references: [id])
+  cantidad       Float
   precioUnitario Float // precio al momento de comprar
 }
 

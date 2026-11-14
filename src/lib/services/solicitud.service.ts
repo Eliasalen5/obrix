@@ -214,6 +214,25 @@ export const solicitudService = {
         }
 
         const sku = skuGenerado(solicitud.id, propuesta.nombre);
+
+        let subcategoriaId: string | null = null;
+        if (propuesta.subcategoriaId) {
+          const subcategoria = await tx.subcategoria.findUnique({
+            where: { id: propuesta.subcategoriaId },
+            select: { categoriaId: true },
+          });
+          if (!subcategoria) {
+            throw new SolicitudError(400, "La subcategoría indicada no existe");
+          }
+          if (subcategoria.categoriaId !== propuesta.categoriaId) {
+            throw new SolicitudError(
+              400,
+              "La subcategoría no pertenece a la categoría indicada",
+            );
+          }
+          subcategoriaId = propuesta.subcategoriaId;
+        }
+
         const creado = await tx.producto.create({
           data: {
             sku,
@@ -231,6 +250,7 @@ export const solicitudService = {
               marca: propuesta.marca,
             }),
             categoriaId: propuesta.categoriaId,
+            subcategoriaId,
             codigoBarras: propuesta.codigoBarras || null,
             fabricante: propuesta.fabricante,
             codigoFabricante: propuesta.codigoFabricante || null,

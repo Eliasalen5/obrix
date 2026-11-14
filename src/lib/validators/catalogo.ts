@@ -15,6 +15,17 @@ export const createCategoriaSchema = z.object({
 
 export const updateCategoriaSchema = createCategoriaSchema.partial();
 
+// Id opcional: la cadena vacía del formulario se normaliza a `undefined`.
+const subcategoriaIdSchema = z.preprocess(
+  (valor) =>
+    typeof valor === "string" && valor.trim() === "" ? undefined : valor,
+  z
+    .string()
+    .trim()
+    .max(40, "Máximo 40 caracteres")
+    .optional(),
+);
+
 export const createProductoSchema = z.object({
   sku: z
     .string()
@@ -37,6 +48,7 @@ export const createProductoSchema = z.object({
     .max(500, "Máximo 500 caracteres")
     .default(""),
   categoriaId: z.string().trim().min(1, "Categoría requerida"),
+  subcategoriaId: subcategoriaIdSchema,
 });
 
 export const updateProductoSchema = createProductoSchema.partial();
@@ -51,6 +63,11 @@ const numeroQuery = (defecto: number, min: number, max: number) =>
 export const listProductosQuerySchema = z.object({
   q: z.string().trim().max(120, "Máximo 120 caracteres").default(""),
   categoriaId: z
+    .string()
+    .trim()
+    .max(40, "Máximo 40 caracteres")
+    .default(""),
+  subcategoriaId: z
     .string()
     .trim()
     .max(40, "Máximo 40 caracteres")

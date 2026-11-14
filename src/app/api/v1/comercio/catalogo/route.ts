@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   const parsed = listProductosQuerySchema.safeParse({
     q: searchParams.get("q") ?? undefined,
     categoriaId: searchParams.get("categoriaId") ?? undefined,
+    subcategoriaId: searchParams.get("subcategoriaId") ?? undefined,
     limit: searchParams.get("limit") ?? undefined,
     offset: searchParams.get("offset") ?? undefined,
   });

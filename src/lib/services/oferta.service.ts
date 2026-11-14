@@ -5,7 +5,7 @@ import type {
 } from "@/lib/validators/oferta";
 
 const includeProducto = {
-  producto: { include: { categoria: true } },
+  producto: { include: { categoria: true, subcategoria: true } },
 } as const;
 
 export const ofertaService = {
