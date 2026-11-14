@@ -1,6 +1,6 @@
 import type { AiConfig } from "./config";
 import { AiProviderError } from "./errors";
-import { SYSTEM_PROMPT } from "./prompt";
+import { BUSQUEDA_SYSTEM_PROMPT, SYSTEM_PROMPT } from "./prompt";
 import type { AiProvider } from "./types";
 
 export type FetchLike = (
@@ -17,8 +17,17 @@ export class OpenAiProvider implements AiProvider {
     private readonly fetchImpl: FetchLike = fetch,
   ) {}
 
-  async generarProyecto(
-    descripcion: string,
+  generarProyecto(descripcion: string, signal: AbortSignal): Promise<unknown> {
+    return this.completarJson(SYSTEM_PROMPT, descripcion, signal);
+  }
+
+  interpretarBusqueda(consulta: string, signal: AbortSignal): Promise<unknown> {
+    return this.completarJson(BUSQUEDA_SYSTEM_PROMPT, consulta, signal);
+  }
+
+  private async completarJson(
+    systemPrompt: string,
+    userContent: string,
     signal: AbortSignal,
   ): Promise<unknown> {
     const res = await this.fetchImpl(
@@ -34,8 +43,8 @@ export class OpenAiProvider implements AiProvider {
           temperature: 0.2,
           response_format: { type: "json_object" },
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: descripcion },
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
           ],
         }),
         signal,
