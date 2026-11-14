@@ -148,7 +148,7 @@ export default function HeroAsistente() {
               aria-hidden="true"
               className="h-2 w-2 rounded-full bg-obrix-orange"
             />
-            Buscador inteligente Obrix
+            Asistente inteligente Obrix
           </p>
           <h1 className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-obrix-white sm:text-6xl">
             Todo para{" "}
@@ -158,7 +158,7 @@ export default function HeroAsistente() {
           </h1>
           <p className="mt-5 text-lg text-neutral-200">
             Buscá productos, identificá materiales con una foto o calculá tu
-            lista con IA.
+            lista con Obrix.
           </p>
 
           <div className="mt-8 rounded-2xl border border-neutral-200 bg-obrix-white p-2 text-left shadow-[0_24px_70px_-40px_rgba(23,23,23,0.45)] ring-1 ring-black/5">
