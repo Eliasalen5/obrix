@@ -184,12 +184,12 @@ export default function NavBar() {
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
           <Link href="/" className="flex shrink-0 items-center" aria-label="Obrix, ir al inicio">
             <Image
-              src="/logo-obrix.webp"
+              src="/logo.jpg"
               alt="Obrix"
               width={128}
-              height={128}
+              height={72}
               priority
-              className="h-10 w-10 rounded-xl object-cover"
+              className="h-10 w-auto rounded-lg object-contain"
             />
             <span className="ml-2 hidden text-lg font-bold tracking-tight sm:block">
               Obrix
