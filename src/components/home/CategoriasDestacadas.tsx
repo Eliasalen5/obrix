@@ -29,11 +29,11 @@ export default function CategoriasDestacadas() {
       className="bg-obrix-white text-obrix-black"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-14">
-        <div className="flex items-end justify-between">
+        <div className="flex flex-col items-center gap-4 text-center">
           <div>
             <span
               aria-hidden="true"
-              className="mb-3 block h-1 w-12 rounded-full bg-obrix-orange"
+              className="mx-auto mb-3 block h-1 w-12 rounded-full bg-obrix-orange"
             />
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Categorías
@@ -42,7 +42,7 @@ export default function CategoriasDestacadas() {
               Encontrá lo que necesitás por rubro
             </p>
           </div>
-          <div className="hidden gap-2 sm:flex">
+          <div className="flex gap-2">
             <button
               onClick={() => scroll("left")}
               className="rounded-full border border-neutral-300 p-2 text-obrix-black transition-colors hover:border-obrix-orange hover:bg-obrix-gray"

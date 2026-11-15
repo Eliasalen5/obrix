@@ -142,7 +142,7 @@ export default function HeroAsistente() {
         className="absolute inset-0 -z-10 bg-black/65 sm:bg-gradient-to-r sm:from-black/85 sm:via-black/60 sm:to-black/20"
       />
       <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:py-20">
-        <div className="max-w-3xl text-center lg:text-left">
+        <div className="mx-auto max-w-3xl text-center">
           <p className="inline-flex items-center gap-2 rounded-full bg-obrix-gray px-3 py-1 text-xs font-semibold uppercase tracking-wide text-obrix-black">
             <span
               aria-hidden="true"
