@@ -86,10 +86,10 @@ export default function CategoriasDestacadas() {
       </div>
       <div
         ref={scrollRef}
-        className="mt-6 overflow-x-auto pb-2 scrollbar-hide"
+        className="mt-6 overflow-x-auto px-4 pb-2 scrollbar-hide"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        <div className="flex flex-col gap-3" style={{ minWidth: "max-content" }}>
+        <div className="mx-auto flex w-max flex-col items-center gap-3">
           <div className="flex gap-3">
             {firstRow.map((cat) => (
               <Link
