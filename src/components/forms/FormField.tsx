@@ -17,6 +17,7 @@ type FormFieldProps = {
   autoCapitalize?: InputHTMLAttributes<HTMLInputElement>["autoCapitalize"];
   maxLength?: number;
   spellCheck?: boolean;
+  options?: string[];
 };
 
 export default function FormField({
@@ -34,9 +35,11 @@ export default function FormField({
   autoCapitalize,
   maxLength,
   spellCheck,
+  options,
 }: FormFieldProps) {
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
+  const listId = options && options.length > 0 ? `${id}-options` : undefined;
   const describedBy =
     [hintId, errorId].filter(Boolean).join(" ") || undefined;
 
@@ -63,6 +66,7 @@ export default function FormField({
         autoCapitalize={autoCapitalize}
         maxLength={maxLength}
         spellCheck={spellCheck}
+        list={listId}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={`mt-1 w-full rounded border bg-white px-3 py-2 text-sm dark:bg-zinc-900 ${
@@ -71,6 +75,13 @@ export default function FormField({
             : "border-zinc-300 dark:border-zinc-700"
         }`}
       />
+      {listId && (
+        <datalist id={listId}>
+          {options?.map((option) => (
+            <option key={option} value={option} />
+          ))}
+        </datalist>
+      )}
       {hint && (
         <p id={hintId} className="mt-1 text-xs text-zinc-500">
           {hint}

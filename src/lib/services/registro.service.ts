@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/services/auth.service";
 import type {
+  ActualizacionSolicitudAltaComercioInput,
   RegistroClienteInput,
   SolicitudAltaComercioInput,
 } from "@/lib/validators/auth";
@@ -168,6 +169,58 @@ export const registroService = {
       include: {
         solicitante: { select: { id: true, email: true, nombre: true } },
       },
+    });
+
+    return { ok: true as const, solicitud: actualizada };
+  },
+
+  async actualizarSolicitudRechazada(
+    solicitanteId: string,
+    input: ActualizacionSolicitudAltaComercioInput,
+  ) {
+    const solicitud = await prisma.solicitudAltaComercio.findUnique({
+      where: { solicitanteId },
+      select: { id: true, estado: true },
+    });
+    if (!solicitud) {
+      return { ok: false as const, motivo: "NO_ENCONTRADO" as const };
+    }
+    if (solicitud.estado !== "RECHAZADA") {
+      return { ok: false as const, motivo: "NO_RECHAZADA" as const };
+    }
+
+    const actualizada = await prisma.$transaction(async (tx) => {
+      await tx.usuario.update({
+        where: { id: solicitanteId },
+        data: { nombre: input.nombreTitular },
+      });
+
+      return tx.solicitudAltaComercio.update({
+        where: { id: solicitud.id },
+        data: {
+          nombreFantasia: input.nombreFantasia,
+          razonSocial: input.razonSocial ?? "",
+          cuit: input.cuit ?? "",
+          direccion: input.direccion,
+          provincia: input.provincia ?? "",
+          localidad: input.localidad ?? "",
+          lat: input.lat,
+          lng: input.lng,
+          telefonoComercial: input.telefonoComercial,
+          telefonoTitular: input.telefonoTitular,
+          rubro: input.rubro ?? "",
+          categorias: input.categorias ?? [],
+          estado: "PENDIENTE",
+          motivoRechazo: "",
+          revisadoById: null,
+          comercioId: null,
+        },
+        include: {
+          solicitante: {
+            select: { id: true, email: true, nombre: true },
+          },
+        },
+      });
     });
 
     return { ok: true as const, solicitud: actualizada };

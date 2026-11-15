@@ -121,6 +121,19 @@ export const solicitudAltaComercioPaso1Schema = solicitudAltaComercioBase
     path: ["confirmPassword"],
   });
 
+export const actualizacionSolicitudAltaComercioSchema =
+  solicitudAltaComercioBase.omit({
+    email: true,
+    password: true,
+    confirmPassword: true,
+  });
+
+export const actualizacionSolicitudAltaComercioPaso1Schema =
+  actualizacionSolicitudAltaComercioSchema.pick({
+    nombreTitular: true,
+    telefonoTitular: true,
+  });
+
 export const rechazarSolicitudAltaSchema = z.object({
   motivo: z.string().trim().min(5, "Motivo requerido (mínimo 5 caracteres)").max(500),
 });
@@ -129,4 +142,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegistroClienteInput = z.infer<typeof registroClienteSchema>;
 export type SolicitudAltaComercioInput = z.infer<typeof solicitudAltaComercioSchema>;
+export type ActualizacionSolicitudAltaComercioInput = z.infer<
+  typeof actualizacionSolicitudAltaComercioSchema
+>;
 export type RechazarSolicitudAltaInput = z.infer<typeof rechazarSolicitudAltaSchema>;

@@ -47,7 +47,8 @@ function enlacesDeCuenta(role?: Role) {
     return [
       { href: "/dashboard", label: "Panel" },
       { href: "/catalogo", label: "Catálogo maestro" },
-      { href: "/solicitudes", label: "Solicitudes" },
+      { href: "/solicitudes", label: "Solicitudes de productos" },
+      { href: "/solicitudes-comercio", label: "Altas de comercio" },
     ];
   }
   return [];

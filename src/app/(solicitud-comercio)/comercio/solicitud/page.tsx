@@ -70,8 +70,8 @@ export default async function SolicitudComercioPage() {
             <strong>Motivo:</strong> {solicitud.motivoRechazo}
           </div>
         ) : null}
-        <a className="text-sm text-blue-600 hover:underline" href="/registro/comercio">
-          Enviar nueva solicitud
+        <a className="text-sm text-blue-600 hover:underline" href="/comercio/solicitud/editar">
+          Corregir y reenviar solicitud
         </a>
       </div>
     );
