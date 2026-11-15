@@ -191,9 +191,6 @@ export default function NavBar() {
               priority
               className="h-10 w-auto rounded-lg object-contain"
             />
-            <span className="ml-2 hidden text-lg font-bold tracking-tight sm:block">
-              Obrix
-            </span>
           </Link>
 
           <nav className="hidden items-center gap-6 lg:flex" aria-label="Navegación principal">
