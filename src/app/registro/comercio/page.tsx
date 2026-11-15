@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { solicitudAltaComercioSchema } from "@/lib/validators/auth";
+import { solicitudAltaComercioPaso1Schema, solicitudAltaComercioSchema } from "@/lib/validators/auth";
 import { request } from "@/lib/api/httpClient";
 import { agregarCallbackUrl } from "@/lib/auth/callback";
 import FormField from "@/components/forms/FormField";
@@ -68,13 +68,7 @@ export default function RegistroComercioPage() {
   function nextStep(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    const partial = solicitudAltaComercioSchema.partial({
-      nombreFantasia: true,
-      direccion: true,
-      lat: true,
-      lng: true,
-      telefonoComercial: true,
-    }).safeParse({
+    const partial = solicitudAltaComercioPaso1Schema.safeParse({
       nombreTitular: form.nombreTitular,
       email: form.email,
       telefonoTitular: form.telefonoTitular,

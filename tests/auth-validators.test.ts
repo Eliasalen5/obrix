@@ -3,6 +3,7 @@ import {
   loginSchema,
   registerSchema,
   registroClienteSchema,
+  solicitudAltaComercioPaso1Schema,
   solicitudAltaComercioSchema,
 } from "@/lib/validators/auth";
 
@@ -90,5 +91,36 @@ describe("schemas de auth — normalización de email", () => {
     });
     expect(parsed.lat).toBe(-34.6037);
     expect(parsed.lng).toBe(-58.3816);
+  });
+});
+
+describe("solicitudAltaComercioPaso1Schema (paso 1 del alta de comercio)", () => {
+  const paso1 = {
+    email: "Juan@Mail.COM",
+    password: "secreta123",
+    confirmPassword: "secreta123",
+    nombreTitular: "Juan Pérez",
+    telefonoTitular: "1123456789",
+  };
+
+  it("valida los datos del titular y normaliza el email", () => {
+    const parsed = solicitudAltaComercioPaso1Schema.parse(paso1);
+    expect(parsed.email).toBe("juan@mail.com");
+  });
+
+  it("rechaza contraseñas que no coinciden", () => {
+    const parsed = solicitudAltaComercioPaso1Schema.safeParse({
+      ...paso1,
+      confirmPassword: "otra12345",
+    });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues[0].path).toEqual(["confirmPassword"]);
+    }
+  });
+
+  it("no exige los campos del comercio (paso 2)", () => {
+    const parsed = solicitudAltaComercioPaso1Schema.safeParse(paso1);
+    expect(parsed.success).toBe(true);
   });
 });

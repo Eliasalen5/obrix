@@ -58,47 +58,63 @@ export const registroClienteSchema = z
     path: ["confirmPassword"],
   });
 
-export const solicitudAltaComercioSchema = z
-  .object({
-    // Datos del titular
-    email: emailSchema,
-    password: z.string().min(8, "Mínimo 8 caracteres"),
-    confirmPassword: z.string().min(8, "Mínimo 8 caracteres"),
-    nombreTitular: z
-      .string()
-      .trim()
-      .min(2, "Nombre del titular requerido (mínimo 2 caracteres)"),
-    telefonoTitular: z
-      .string()
-      .trim()
-      .min(6, "Teléfono del titular requerido")
-      .max(40, "Máximo 40 caracteres"),
+const solicitudAltaComercioBase = z.object({
+  // Datos del titular
+  email: emailSchema,
+  password: z.string().min(8, "Mínimo 8 caracteres"),
+  confirmPassword: z.string().min(8, "Mínimo 8 caracteres"),
+  nombreTitular: z
+    .string()
+    .trim()
+    .min(2, "Nombre del titular requerido (mínimo 2 caracteres)"),
+  telefonoTitular: z
+    .string()
+    .trim()
+    .min(6, "Teléfono del titular requerido")
+    .max(40, "Máximo 40 caracteres"),
 
-    // Datos del comercio
-    nombreFantasia: z
-      .string()
-      .trim()
-      .min(2, "Nombre de fantasía requerido (mínimo 2 caracteres)")
-      .max(120, "Máximo 120 caracteres"),
-    razonSocial: z.string().trim().max(160, "Máximo 160 caracteres").optional().or(z.literal("")),
-    cuit: z
-      .string()
-      .trim()
-      .regex(/^(\d{2}-\d{8}-\d{1}|\d{11})$/, "CUIT inválido (formato 00-00000000-0 o 00000000000)")
-      .optional()
-      .or(z.literal("")),
-    direccion: z.string().trim().min(5, "Dirección requerida"),
-    provincia: z.string().trim().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
-    localidad: z.string().trim().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
-    lat: latitudSchema,
-    lng: longitudSchema,
-    telefonoComercial: z
-      .string()
-      .trim()
-      .min(6, "Teléfono comercial requerido")
-      .max(40, "Máximo 40 caracteres"),
-    rubro: z.string().trim().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
-    categorias: z.array(z.string().trim().min(1)).max(20).optional().default([]),
+  // Datos del comercio
+  nombreFantasia: z
+    .string()
+    .trim()
+    .min(2, "Nombre de fantasía requerido (mínimo 2 caracteres)")
+    .max(120, "Máximo 120 caracteres"),
+  razonSocial: z.string().trim().max(160, "Máximo 160 caracteres").optional().or(z.literal("")),
+  cuit: z
+    .string()
+    .trim()
+    .regex(/^(\d{2}-\d{8}-\d{1}|\d{11})$/, "CUIT inválido (formato 00-00000000-0 o 00000000000)")
+    .optional()
+    .or(z.literal("")),
+  direccion: z.string().trim().min(5, "Dirección requerida"),
+  provincia: z.string().trim().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
+  localidad: z.string().trim().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
+  lat: latitudSchema,
+  lng: longitudSchema,
+  telefonoComercial: z
+    .string()
+    .trim()
+    .min(6, "Teléfono comercial requerido")
+    .max(40, "Máximo 40 caracteres"),
+  rubro: z.string().trim().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
+  categorias: z.array(z.string().trim().min(1)).max(20).optional().default([]),
+});
+
+export const solicitudAltaComercioSchema = solicitudAltaComercioBase.refine(
+  (data) => data.password === data.confirmPassword,
+  {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  },
+);
+
+export const solicitudAltaComercioPaso1Schema = solicitudAltaComercioBase
+  .pick({
+    email: true,
+    password: true,
+    confirmPassword: true,
+    nombreTitular: true,
+    telefonoTitular: true,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Las contraseñas no coinciden",
