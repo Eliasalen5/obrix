@@ -41,12 +41,16 @@ export async function POST(request: NextRequest) {
   const form = await request.formData().catch(() => null);
   if (!form) return jsonError(400, "Enviá la fotografía como formulario");
 
-  const parsed = imagenVisionSchema.safeParse({ imagen: form.get("imagen") });
+  const parsed = imagenVisionSchema.safeParse({
+    imagen: form.get("imagen"),
+    detalle: form.get("detalle"),
+  });
   if (!parsed.success) {
     return jsonError(400, "Fotografía inválida", zodDetails(parsed.error));
   }
 
   const imagen = parsed.data.imagen;
+  const detalle = parsed.data.detalle;
   const bytes = new Uint8Array(await imagen.arrayBuffer());
   if (!tieneFirmaImagenValida(bytes, imagen.type)) {
     return jsonError(400, "El archivo no contiene una imagen válida");
@@ -59,7 +63,7 @@ export async function POST(request: NextRequest) {
       Buffer.from(bytes).toString("base64"),
       imagen.type,
       getAiProvider(config),
-      { timeoutMs: config.timeoutMs },
+      { timeoutMs: config.timeoutMs, detalle },
     );
     return Response.json({ data });
   } catch (error) {

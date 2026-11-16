@@ -27,13 +27,20 @@ vi.mock("@/lib/ofertas/buscarOfertas", () => ({
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
+const DETALLE = "Sujetar chapa en el techo del galpón";
+
 function archivo() {
   return new File([PNG], "tornillo.png", { type: "image/png" });
 }
 
-function req(imagen: File | null = archivo(), ip = "1.1.1.1") {
+function req(
+  imagen: File | null = archivo(),
+  ip = "1.1.1.1",
+  detalle: string | null = DETALLE,
+) {
   const form = new FormData();
   if (imagen) form.append("imagen", imagen);
+  if (detalle !== null) form.append("detalle", detalle);
   return new Request("http://localhost/api/v1/vision", {
     method: "POST",
     headers: { "x-forwarded-for": ip },
@@ -61,6 +68,41 @@ describe("vision — entrada", () => {
 
   it("exige una fotografía", async () => {
     expect((await vision.POST(req(null))).status).toBe(400);
+  });
+
+  it("exige el detalle de la tarea", async () => {
+    expect((await vision.POST(req(archivo(), "1.1.1.1", null))).status).toBe(
+      400,
+    );
+    expect((await vision.POST(req(archivo(), "1.1.1.1", "corto"))).status).toBe(
+      400,
+    );
+  });
+
+  it("reenvía el detalle al proveedor", async () => {
+    const identificarImagen = vi.fn(async () => ({
+      objeto: "Tornillo",
+      tipo: "Autoperforante",
+      caracteristicas: [],
+      incertidumbres: ["Medidas"],
+      confianza: "probable",
+      terminos: "tornillo",
+      categoria: "Ferreterías",
+    }));
+    mocks.getAiProvider.mockReturnValue({
+      nombre: "x",
+      esDemo: false,
+      identificarImagen,
+    });
+
+    const res = await vision.POST(req(archivo(), "1.1.1.1", DETALLE));
+    expect(res.status).toBe(200);
+    expect(identificarImagen).toHaveBeenCalledWith(
+      expect.any(String),
+      "image/png",
+      expect.any(AbortSignal),
+      { detalle: DETALLE },
+    );
   });
 
   it("rechaza MIME no permitidos y contenido disfrazado", async () => {

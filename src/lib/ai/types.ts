@@ -13,10 +13,15 @@ export interface AiProvider {
     consulta: string,
     signal: AbortSignal,
   ): Promise<unknown>;
-  /** Devuelve la identificación visual cruda; el servicio la valida. */
+  /**
+   * Devuelve la identificación visual cruda; el servicio la valida.
+   * `opts.detalle` es la tarea que el usuario quiere hacer con lo que muestra
+   * la foto; ayuda a desambiguar la identificación.
+   */
   identificarImagen(
     imagenBase64: string,
     mime: string,
     signal: AbortSignal,
+    opts?: { detalle?: string },
   ): Promise<unknown>;
 }

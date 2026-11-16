@@ -29,7 +29,7 @@ export async function identificarYBuscar(
   imagenBase64: string,
   mime: string,
   provider: AiProvider,
-  opts: { timeoutMs: number },
+  opts: { timeoutMs: number; detalle?: string },
 ): Promise<VisionResponse> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
@@ -40,6 +40,7 @@ export async function identificarYBuscar(
       imagenBase64,
       mime,
       controller.signal,
+      { detalle: opts.detalle },
     );
   } catch (error) {
     if (controller.signal.aborted) throw new AiTimeoutError();
@@ -69,5 +70,6 @@ export async function identificarYBuscar(
     identificacion,
     modo: provider.esDemo ? "demo" : "real",
     ofertas: ofertas.map(mapearOferta),
+    detalle: opts.detalle?.trim() || undefined,
   };
 }

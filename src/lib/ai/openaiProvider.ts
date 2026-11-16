@@ -40,14 +40,17 @@ export class OpenAiProvider implements AiProvider {
     imagenBase64: string,
     mime: string,
     signal: AbortSignal,
+    opts?: { detalle?: string },
   ): Promise<unknown> {
+    const detalle = opts?.detalle?.trim();
+    const instruccion = detalle
+      ? `Analizá esta fotografía. El usuario quiere hacer: "${detalle}". Usá esa tarea para desambiguar el objeto y devolvé la identificación en el formato pedido.`
+      : "Analizá esta fotografía y devolvé la identificación en el formato pedido.";
+
     return this.completarJson(
       VISION_SYSTEM_PROMPT,
       [
-        {
-          type: "text",
-          text: "Analizá esta fotografía y devolvé la identificación en el formato pedido.",
-        },
+        { type: "text", text: instruccion },
         {
           type: "image_url",
           image_url: {

@@ -32,6 +32,7 @@ describe("visionApi.identificar", () => {
 
     const result = await visionApi.identificar(
       new File([new Uint8Array([1])], "foto.png", { type: "image/png" }),
+      "Sujetar chapa en el techo",
     );
 
     expect(result.ok).toBe(true);
@@ -43,6 +44,9 @@ describe("visionApi.identificar", () => {
     expect(init.method).toBe("POST");
     expect(init.body).toBeInstanceOf(FormData);
     expect((init.body as FormData).get("imagen")).toBeInstanceOf(File);
+    expect((init.body as FormData).get("detalle")).toBe(
+      "Sujetar chapa en el techo",
+    );
     expect(init.headers).toBeUndefined();
   });
 });

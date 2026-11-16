@@ -1,25 +1,32 @@
 import { describe, expect, it } from "vitest";
 import {
+  DETALLE_MAX,
   IMAGEN_MAX_BYTES,
   imagenVisionSchema,
   tieneFirmaImagenValida,
 } from "@/lib/validators/vision";
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const DETALLE = "Sujetar chapa en el techo del galpón";
 
 describe("imagenVisionSchema", () => {
   it("acepta PNG, JPEG y WebP dentro del límite", () => {
     for (const type of ["image/png", "image/jpeg", "image/webp"]) {
       const imagen = new File([PNG], "material", { type });
-      expect(imagenVisionSchema.safeParse({ imagen }).success).toBe(true);
+      expect(
+        imagenVisionSchema.safeParse({ imagen, detalle: DETALLE }).success,
+      ).toBe(true);
     }
   });
 
   it("rechaza una imagen ausente o vacía", () => {
-    expect(imagenVisionSchema.safeParse({ imagen: null }).success).toBe(false);
+    expect(
+      imagenVisionSchema.safeParse({ imagen: null, detalle: DETALLE }).success,
+    ).toBe(false);
     expect(
       imagenVisionSchema.safeParse({
         imagen: new File([], "vacia.png", { type: "image/png" }),
+        detalle: DETALLE,
       }).success,
     ).toBe(false);
   });
@@ -28,6 +35,7 @@ describe("imagenVisionSchema", () => {
     expect(
       imagenVisionSchema.safeParse({
         imagen: new File(["texto"], "texto.txt", { type: "text/plain" }),
+        detalle: DETALLE,
       }).success,
     ).toBe(false);
     expect(
@@ -35,6 +43,21 @@ describe("imagenVisionSchema", () => {
         imagen: new File([new Uint8Array(IMAGEN_MAX_BYTES + 1)], "grande.png", {
           type: "image/png",
         }),
+        detalle: DETALLE,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("exige el detalle de la tarea", () => {
+    const imagen = new File([PNG], "material.png", { type: "image/png" });
+    expect(imagenVisionSchema.safeParse({ imagen }).success).toBe(false);
+    expect(
+      imagenVisionSchema.safeParse({ imagen, detalle: "corto" }).success,
+    ).toBe(false);
+    expect(
+      imagenVisionSchema.safeParse({
+        imagen,
+        detalle: "x".repeat(DETALLE_MAX + 1),
       }).success,
     ).toBe(false);
   });

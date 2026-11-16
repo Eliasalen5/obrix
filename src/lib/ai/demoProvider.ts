@@ -195,9 +195,18 @@ export class DemoProvider implements AiProvider {
     return interpretarDemo(consulta);
   }
 
-  async identificarImagen(): Promise<unknown> {
+  async identificarImagen(
+    _imagenBase64?: string,
+    _mime?: string,
+    _signal?: AbortSignal,
+    opts?: { detalle?: string },
+  ): Promise<unknown> {
     // La demo no analiza bytes: expone el mismo contrato que la visión real,
     // con incertidumbres explícitas y una identificación solamente probable.
+    // Si el usuario describió su tarea, la usa para orientar los términos.
+    const detalle = opts?.detalle?.trim();
+    const sugerencia = detalle ? interpretarDemo(detalle) : null;
+
     return {
       objeto: "Tornillo",
       tipo: "Tornillo autoperforante de fijación (simulado)",
@@ -212,8 +221,8 @@ export class DemoProvider implements AiProvider {
         "Material y resistencia real",
       ],
       confianza: "probable",
-      terminos: "tornillo",
-      categoria: "Ferreterías",
+      terminos: sugerencia?.terminos ?? "tornillo",
+      categoria: sugerencia?.categoria ?? "Ferreterías",
     };
   }
 

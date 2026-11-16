@@ -7,42 +7,37 @@ import {
   DESCRIPCION_MAX,
   DESCRIPCION_MIN,
 } from "@/lib/validators/asistente";
-import { CONSULTA_MAX, CONSULTA_MIN } from "@/lib/validators/busqueda";
-import { guardarProyectoPendiente } from "@/lib/proyecto/pendiente";
-import { busquedaIaApi } from "@/lib/api/busquedaIaClient";
-import { visionApi } from "@/lib/api/visionClient";
-import { guardarResultadoVision } from "@/lib/vision/resultado";
 import {
+  DETALLE_MAX,
+  DETALLE_MIN,
   IMAGEN_MAX_BYTES,
   TIPOS_IMAGEN_PERMITIDOS,
 } from "@/lib/validators/vision";
+import { guardarProyectoPendiente } from "@/lib/proyecto/pendiente";
+import { visionApi } from "@/lib/api/visionClient";
+import { guardarResultadoVision } from "@/lib/vision/resultado";
 
-type Modo = "escribir" | "foto" | "proyecto";
+type Modo = "escribir" | "foto";
 
 const MODOS: { id: Modo; label: string }[] = [
   { id: "escribir", label: "Escribir" },
-  { id: "foto", label: "Fotografía" },
-  { id: "proyecto", label: "Proyecto" },
+  { id: "foto", label: "Imagen" },
 ];
 
-const EJEMPLOS_BUSQUEDA = [
-  "Pintura para impermeabilizar una terraza",
-  "Tornillos autoperforantes",
-  "Cable unipolar 2,5 mm",
-];
-
-const EJEMPLOS_PROYECTO = [
+const EJEMPLOS_TAREA = [
   {
     label: "Parrilla de 1,5 m",
-    texto: "Quiero hacer una parrilla de 1,5 m con ladrillo y cemento.",
+    texto:
+      "Quiero hacer una parrilla de 1,5 m en el fondo, con ladrillo y cemento.",
   },
   {
     label: "Baño completo",
-    texto: "Necesito materiales para un baño completo con cerámicos.",
+    texto:
+      "Necesito materiales para un baño completo de 2 x 3 m con cerámicos.",
   },
   {
     label: "Pintar un living",
-    texto: "Quiero pintar un living de 4 x 5 m con dos manos.",
+    texto: "Quiero pintar un living de 4 x 5 m con dos manos de látex.",
   },
 ];
 
@@ -50,25 +45,34 @@ export default function HeroAsistente() {
   const router = useRouter();
   const [modo, setModo] = useState<Modo>("escribir");
 
-  const [consulta, setConsulta] = useState("");
-  const [buscando, setBuscando] = useState(false);
-  const [errorBusqueda, setErrorBusqueda] = useState<string | null>(null);
+  const [tarea, setTarea] = useState("");
+  const [errorTarea, setErrorTarea] = useState<string | null>(null);
 
   const [foto, setFoto] = useState<File | null>(null);
+  const [detalle, setDetalle] = useState("");
   const [analizando, setAnalizando] = useState(false);
   const [errorFoto, setErrorFoto] = useState<string | null>(null);
 
-  const [descripcion, setDescripcion] = useState("");
-  const [errorProyecto, setErrorProyecto] = useState<string | null>(null);
-
-  const textoProyecto = descripcion.trim();
-  const proyectoValido = textoProyecto.length >= DESCRIPCION_MIN;
+  const tareaValida = tarea.trim().length >= DESCRIPCION_MIN;
+  const detalleValido = detalle.trim().length >= DETALLE_MIN;
 
   function cambiarModo(nuevo: Modo) {
     setModo(nuevo);
-    setErrorBusqueda(null);
-    setErrorProyecto(null);
+    setErrorTarea(null);
     setErrorFoto(null);
+  }
+
+  function onEscribir(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const texto = tarea.trim();
+    if (texto.length < DESCRIPCION_MIN) {
+      setErrorTarea(
+        `Contanos un poco más sobre tu proyecto (mínimo ${DESCRIPCION_MIN} caracteres).`,
+      );
+      return;
+    }
+    guardarProyectoPendiente(texto, true);
+    router.push("/cliente/proyecto");
   }
 
   async function onIdentificar(event: FormEvent<HTMLFormElement>) {
@@ -77,13 +81,20 @@ export default function HeroAsistente() {
       setErrorFoto("Elegí o sacá una fotografía del material.");
       return;
     }
+    const detalleLimpio = detalle.trim();
+    if (detalleLimpio.length < DETALLE_MIN) {
+      setErrorFoto(
+        `Contá qué querés hacer con lo que muestra la foto (mínimo ${DETALLE_MIN} caracteres).`,
+      );
+      return;
+    }
     if (foto.size > IMAGEN_MAX_BYTES) {
       setErrorFoto("La fotografía supera el máximo de 4 MB.");
       return;
     }
     setErrorFoto(null);
     setAnalizando(true);
-    const res = await visionApi.identificar(foto);
+    const res = await visionApi.identificar(foto, detalleLimpio);
     setAnalizando(false);
     if (!res.ok) {
       setErrorFoto(res.error);
@@ -91,40 +102,6 @@ export default function HeroAsistente() {
     }
     guardarResultadoVision(res.data);
     router.push("/busqueda/foto");
-  }
-
-  async function onBuscar(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const texto = consulta.trim();
-    if (texto.length < CONSULTA_MIN) {
-      setErrorBusqueda(
-        `Contanos qué estás buscando (mínimo ${CONSULTA_MIN} caracteres).`,
-      );
-      return;
-    }
-    setErrorBusqueda(null);
-    setBuscando(true);
-    const res = await busquedaIaApi.interpretar(texto);
-    setBuscando(false);
-    if (!res.ok) {
-      setErrorBusqueda(res.error);
-      return;
-    }
-    const params = new URLSearchParams({ q: res.data.terminos });
-    if (res.data.categoria) params.set("categoria", res.data.categoria);
-    router.push(`/ofertas?${params.toString()}`);
-  }
-
-  function onProyecto(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!proyectoValido) {
-      setErrorProyecto(
-        `Contanos un poco más sobre tu proyecto (mínimo ${DESCRIPCION_MIN} caracteres).`,
-      );
-      return;
-    }
-    guardarProyectoPendiente(textoProyecto, true);
-    router.push("/cliente/proyecto");
   }
 
   return (
@@ -157,8 +134,8 @@ export default function HeroAsistente() {
             </span>
           </h1>
           <p className="mt-5 text-lg text-neutral-200">
-            Buscá productos, identificá materiales con una foto o calculá tu
-            lista con Obrix.
+            Contá tu proyecto escribiendo o con una foto. Cuantos más detalles
+            des, mejor te resuelve la IA.
           </p>
 
           <div className="mt-8 rounded-2xl border border-neutral-200 bg-obrix-white p-2 text-left shadow-[0_24px_70px_-40px_rgba(23,23,23,0.45)] ring-1 ring-black/5">
@@ -186,53 +163,54 @@ export default function HeroAsistente() {
             </div>
 
             {modo === "escribir" && (
-              <form onSubmit={onBuscar} className="mt-2">
-                <label htmlFor="hero-consulta" className="sr-only">
-                  ¿Qué estás buscando?
+              <form onSubmit={onEscribir} className="mt-2">
+                <label htmlFor="hero-tarea" className="sr-only">
+                  Describí tu proyecto
                 </label>
-                <input
-                  id="hero-consulta"
-                  type="text"
-                  value={consulta}
+                <textarea
+                  id="hero-tarea"
+                  rows={3}
+                  value={tarea}
                   onChange={(event) => {
-                    setConsulta(event.target.value);
-                    if (errorBusqueda) setErrorBusqueda(null);
+                    setTarea(event.target.value);
+                    if (errorTarea) setErrorTarea(null);
                   }}
-                  maxLength={CONSULTA_MAX}
-                  aria-invalid={Boolean(errorBusqueda)}
-                  placeholder="Ej: necesito una pintura para impermeabilizar una terraza"
-                  className="w-full rounded-xl bg-transparent px-3 py-3 text-base text-obrix-black placeholder:text-neutral-400 focus:outline-none"
+                  maxLength={DESCRIPCION_MAX}
+                  aria-invalid={Boolean(errorTarea)}
+                  placeholder="Contá qué querés hacer. Ej: quiero hacer una parrilla de 1,5 m en el fondo, con ladrillo y cemento."
+                  className="w-full resize-none rounded-xl bg-transparent px-3 py-3 text-base text-obrix-black placeholder:text-neutral-400 focus:outline-none"
                 />
                 <div className="flex flex-col gap-2 border-t border-neutral-200 px-2 py-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-neutral-500">
-                    Entendemos lo que buscás, aunque no sepas el nombre exacto.
+                    Detallá medidas, cantidad y tipo de ambiente: la IA arma la
+                    lista de materiales y compara precios.
                   </p>
                   <button
                     type="submit"
-                    disabled={buscando}
+                    disabled={!tareaValida}
                     className="rounded-full bg-obrix-orange px-5 py-2.5 font-semibold text-obrix-black transition-colors hover:bg-[#e85c00] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {buscando ? "Buscando…" : "Buscar"}
+                    Calcular materiales
                   </button>
                 </div>
-                {errorBusqueda && (
+                {errorTarea && (
                   <p role="alert" className="px-2 pb-1 text-sm text-red-600">
-                    {errorBusqueda}
+                    {errorTarea}
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-2 px-2 pb-2 pt-1 text-sm">
                   <span className="text-xs text-neutral-500">Ejemplos:</span>
-                  {EJEMPLOS_BUSQUEDA.map((ejemplo) => (
+                  {EJEMPLOS_TAREA.map((ejemplo) => (
                     <button
-                      key={ejemplo}
+                      key={ejemplo.label}
                       type="button"
                       onClick={() => {
-                        setConsulta(ejemplo);
-                        setErrorBusqueda(null);
+                        setTarea(ejemplo.texto);
+                        setErrorTarea(null);
                       }}
                       className="rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium text-obrix-black transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
                     >
-                      {ejemplo}
+                      {ejemplo.label}
                     </button>
                   ))}
                 </div>
@@ -243,7 +221,7 @@ export default function HeroAsistente() {
               <form onSubmit={onIdentificar} className="mt-2">
                 <label
                   htmlFor="hero-foto"
-                  className="block cursor-pointer rounded-xl border border-dashed border-neutral-300 px-4 py-6 text-center transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
+                  className="block cursor-pointer rounded-xl border border-dashed border-neutral-300 px-4 py-5 text-center transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
                 >
                   <span className="block text-sm font-semibold text-obrix-black">
                     {foto ? foto.name : "Elegí o sacá una foto"}
@@ -263,20 +241,38 @@ export default function HeroAsistente() {
                     setErrorFoto(null);
                   }}
                 />
-                <p className="mt-2 px-2 text-xs text-neutral-500">
-                  La identificación es orientativa; verificá medidas y
-                  especificaciones.
+
+                <label htmlFor="hero-detalle" className="sr-only">
+                  ¿Qué querés hacer con lo que muestra la foto?
+                </label>
+                <textarea
+                  id="hero-detalle"
+                  rows={2}
+                  value={detalle}
+                  onChange={(event) => {
+                    setDetalle(event.target.value);
+                    if (errorFoto) setErrorFoto(null);
+                  }}
+                  maxLength={DETALLE_MAX}
+                  aria-invalid={Boolean(errorFoto)}
+                  placeholder="¿Qué querés hacer con lo que muestra la foto? Ej: sujetar chapa en el techo."
+                  className="mt-2 w-full resize-none rounded-xl bg-transparent px-3 py-3 text-base text-obrix-black placeholder:text-neutral-400 focus:outline-none"
+                />
+                <p className="px-2 text-xs text-neutral-500">
+                  El detalle ayuda a la IA a identificar mejor. La foto no se
+                  guarda y la identificación es orientativa.
                 </p>
+
                 <div className="mt-2 flex flex-col gap-2 border-t border-neutral-200 px-2 py-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-neutral-500">
-                    La foto no se guarda.
+                    Verificá medidas y especificaciones antes de comprar.
                   </p>
                   <button
                     type="submit"
-                    disabled={!foto || analizando}
+                    disabled={!foto || !detalleValido || analizando}
                     className="rounded-full bg-obrix-orange px-5 py-2.5 font-semibold text-obrix-black transition-colors hover:bg-[#e85c00] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {analizando ? "Analizando foto…" : "Buscar por foto"}
+                    {analizando ? "Analizando foto…" : "Identificar material"}
                   </button>
                 </div>
                 {errorFoto && (
@@ -286,63 +282,7 @@ export default function HeroAsistente() {
                 )}
               </form>
             )}
-
-            {modo === "proyecto" && (
-              <form onSubmit={onProyecto} className="mt-2">
-                <label htmlFor="hero-descripcion" className="sr-only">
-                  Describí tu proyecto
-                </label>
-                <textarea
-                  id="hero-descripcion"
-                  rows={3}
-                  value={descripcion}
-                  onChange={(event) => {
-                    setDescripcion(event.target.value);
-                    if (errorProyecto) setErrorProyecto(null);
-                  }}
-                  maxLength={DESCRIPCION_MAX}
-                  aria-invalid={Boolean(errorProyecto)}
-                  placeholder="Describí tu obra. Ej: una parrilla de 1,5 m."
-                  className="w-full resize-none rounded-xl bg-transparent px-3 py-3 text-base text-obrix-black placeholder:text-neutral-400 focus:outline-none"
-                />
-                <div className="flex flex-col gap-2 border-t border-neutral-200 px-2 py-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs text-neutral-500">
-                    La IA estima cantidades y compara precios.
-                  </p>
-                  <button
-                    type="submit"
-                    disabled={!proyectoValido}
-                    className="rounded-full bg-obrix-orange px-5 py-2.5 font-semibold text-obrix-black transition-colors hover:bg-[#e85c00] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Calcular materiales
-                  </button>
-                </div>
-                {errorProyecto && (
-                  <p role="alert" className="px-2 pb-1 text-sm text-red-600">
-                    {errorProyecto}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-center gap-2 px-2 pb-2 pt-1 text-sm">
-                  <span className="text-xs text-neutral-500">Ejemplos:</span>
-                  {EJEMPLOS_PROYECTO.map((ejemplo) => (
-                    <button
-                      key={ejemplo.label}
-                      type="button"
-                      onClick={() => {
-                        setDescripcion(ejemplo.texto);
-                        setErrorProyecto(null);
-                      }}
-                      className="rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium text-obrix-black transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
-                    >
-                      {ejemplo.label}
-                    </button>
-                  ))}
-                </div>
-              </form>
-            )}
           </div>
-
-
         </div>
       </div>
     </section>

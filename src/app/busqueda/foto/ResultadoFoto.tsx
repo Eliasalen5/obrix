@@ -59,6 +59,11 @@ export default function ResultadoFoto() {
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Identificación por fotografía
         </h1>
+        {resultado.detalle && (
+          <p className="mt-2 text-sm text-neutral-600">
+            Tarea indicada: “{resultado.detalle}”
+          </p>
+        )}
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <section className="rounded-2xl border border-neutral-200 p-5">

@@ -51,6 +51,47 @@ describe("demoProvider.identificarImagen", () => {
       precio: 8500,
     });
   });
+
+  it("usa el detalle de la tarea para orientar los términos", async () => {
+    const res = await identificarYBuscar(
+      "base64",
+      "image/png",
+      new DemoProvider(),
+      { timeoutMs: 5000, detalle: "Necesito pintar una terraza" },
+    );
+
+    expect(mocks.buscarOfertasPublicas).toHaveBeenCalledWith({
+      q: "impermeabilizante membrana",
+      categoria: "Pinturerías",
+      take: 12,
+    });
+    expect(res.detalle).toBe("Necesito pintar una terraza");
+  });
+
+  it("reenvía el detalle al proveedor", async () => {
+    const identificarImagen = vi.fn(async () => ({
+      objeto: "Tornillo",
+      tipo: "Autoperforante",
+      caracteristicas: [],
+      incertidumbres: ["Medidas"],
+      confianza: "probable",
+      terminos: "tornillo",
+      categoria: "Ferreterías",
+    }));
+    const provider: any = { nombre: "test", esDemo: false, identificarImagen };
+
+    await identificarYBuscar("base64", "image/png", provider, {
+      timeoutMs: 5000,
+      detalle: "Sujetar chapa en el techo",
+    });
+
+    expect(identificarImagen).toHaveBeenCalledWith(
+      "base64",
+      "image/png",
+      expect.any(AbortSignal),
+      { detalle: "Sujetar chapa en el techo" },
+    );
+  });
 });
 
 describe("vision.service", () => {

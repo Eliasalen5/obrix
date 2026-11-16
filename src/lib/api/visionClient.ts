@@ -11,9 +11,10 @@ export type {
 const BASE = "/api/v1/vision";
 
 export const visionApi = {
-  identificar: (imagen: File) => {
+  identificar: (imagen: File, detalle: string) => {
     const form = new FormData();
     form.append("imagen", imagen);
+    form.append("detalle", detalle);
     return request<VisionResponse>(BASE, { method: "POST", body: form });
   },
 };
