@@ -5,7 +5,7 @@ export default function ClientePanel() {
     <div className="mx-auto w-full max-w-5xl px-4 py-8">
       <h1 className="text-2xl font-semibold">Mi panel</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Describí tu proyecto, comparé comercios y seguí el estado de tus pedidos.
+        Describí tu proyecto, compará comercios y seguí el estado de tus pedidos.
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

@@ -175,13 +175,13 @@ export default function NavBar() {
   const enlaceClase = (href: string) =>
     `flex h-16 items-center border-b-2 text-sm transition-colors ${
       esActivo(href)
-        ? "border-obrix-orange font-semibold text-obrix-black"
-        : "border-transparent text-neutral-600 hover:text-obrix-black"
+        ? "border-obrix-orange font-semibold text-obrix-white"
+        : "border-transparent text-neutral-300 hover:text-obrix-white"
     }`;
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-neutral-200 bg-obrix-white/95 text-obrix-black backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-neutral-800 bg-obrix-black/95 text-obrix-white backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
           <Link href="/" className="flex shrink-0 items-center" aria-label="Obrix, ir al inicio">
             <Image
@@ -211,8 +211,8 @@ export default function NavBar() {
                 aria-controls="menu-categorias"
                 className={`flex h-16 items-center gap-1 border-b-2 text-sm transition-colors ${
                   categoriasOpen
-                    ? "border-obrix-orange font-semibold text-obrix-black"
-                    : "border-transparent text-neutral-600 hover:text-obrix-black"
+                    ? "border-obrix-orange font-semibold text-obrix-white"
+                    : "border-transparent text-neutral-300 hover:text-obrix-white"
                 }`}
               >
                 Categorías
@@ -228,7 +228,7 @@ export default function NavBar() {
               {categoriasOpen && (
                 <div
                   id="menu-categorias"
-                  className="absolute left-0 top-full mt-2 w-[640px] rounded-2xl border border-neutral-200 bg-obrix-white p-4 shadow-2xl"
+                  className="absolute left-0 top-full mt-2 w-[640px] rounded-2xl border border-neutral-200 bg-obrix-white p-4 text-obrix-black shadow-2xl"
                 >
                   <div className="grid grid-cols-2 gap-1">
                     {CATEGORIAS.map((categoria) => (
@@ -311,7 +311,7 @@ export default function NavBar() {
             <label htmlFor="ubicacion-header" className="sr-only">
               Ubicación
             </label>
-            <div className="flex items-center gap-1 rounded-full border border-neutral-300 px-3 py-1.5">
+            <div className="flex items-center gap-1 rounded-full border border-neutral-600 px-3 py-1.5">
               <Icon className="h-4 w-4 text-obrix-orange">
                 <path
                   strokeLinecap="round"
@@ -328,7 +328,7 @@ export default function NavBar() {
                 id="ubicacion-header"
                 value={ubicacion}
                 onChange={(event) => cambiarUbicacion(event.target.value)}
-                className="max-w-[8.5rem] bg-transparent text-sm text-obrix-black focus:outline-none"
+                className="max-w-[8.5rem] bg-transparent text-sm text-obrix-white focus:outline-none [&>option]:text-obrix-black"
               >
                 <option value="">Elegí tu zona</option>
                 {LOCALIDADES.map((localidad) => (
@@ -344,7 +344,7 @@ export default function NavBar() {
                 href="/cliente/proyecto"
                 aria-label="Armar pedido"
                 title="Armar pedido"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-300 text-obrix-black transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-600 text-obrix-white transition-colors hover:border-obrix-orange hover:bg-neutral-800"
               >
                 <Icon>
                   <path
@@ -368,7 +368,7 @@ export default function NavBar() {
                 aria-expanded={cuentaOpen}
                 aria-haspopup="true"
                 aria-controls="menu-cuenta"
-                className="flex items-center gap-2 rounded-full border border-neutral-300 px-3 py-1.5 text-sm font-medium transition-colors hover:border-obrix-orange hover:bg-obrix-gray"
+                className="flex items-center gap-2 rounded-full border border-neutral-600 px-3 py-1.5 text-sm font-medium transition-colors hover:border-obrix-orange hover:bg-neutral-800"
               >
                 <Icon className="h-4 w-4">
                   <path
@@ -384,7 +384,7 @@ export default function NavBar() {
               {cuentaOpen && (
                 <div
                   id="menu-cuenta"
-                  className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-neutral-200 bg-obrix-white p-2 shadow-2xl"
+                  className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-neutral-200 bg-obrix-white p-2 text-obrix-black shadow-2xl"
                 >
                   {role ? (
                     <>
@@ -448,7 +448,7 @@ export default function NavBar() {
               onClick={() => setBusquedaOpen((open) => !open)}
               aria-label="Buscar"
               aria-expanded={busquedaOpen}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-obrix-black transition-colors hover:bg-obrix-gray"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-obrix-white transition-colors hover:bg-neutral-800"
             >
               <Icon>
                 <path
@@ -461,7 +461,7 @@ export default function NavBar() {
             <Link
               href={role ? PANEL_POR_ROL[role] : "/ingresar"}
               aria-label={role ? "Mi cuenta" : "Iniciar sesión"}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-obrix-black transition-colors hover:bg-obrix-gray"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-obrix-white transition-colors hover:bg-neutral-800"
             >
               <Icon>
                 <path
@@ -481,7 +481,7 @@ export default function NavBar() {
               aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
               aria-expanded={menuOpen}
               aria-controls="menu-movil"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-obrix-black transition-colors hover:bg-obrix-gray"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-obrix-white transition-colors hover:bg-neutral-800"
             >
               <Icon>
                 {menuOpen ? (
@@ -503,7 +503,7 @@ export default function NavBar() {
         </div>
 
         {busquedaOpen && (
-          <div className="border-t border-neutral-200 bg-obrix-white lg:hidden">
+          <div className="border-t border-neutral-200 bg-obrix-white text-obrix-black lg:hidden">
             <form
               role="search"
               onSubmit={buscar}
@@ -543,7 +543,7 @@ export default function NavBar() {
         {menuOpen && (
           <div
             id="menu-movil"
-            className="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-neutral-200 bg-obrix-white lg:hidden"
+            className="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-neutral-200 bg-obrix-white text-obrix-black lg:hidden"
           >
             <nav
               className="mx-auto max-w-7xl space-y-5 px-4 py-4"
