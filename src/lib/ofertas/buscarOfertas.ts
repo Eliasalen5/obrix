@@ -4,7 +4,15 @@ import { normalizarClave } from "@/lib/text/busqueda";
 
 export const includeOfertaPublica = {
   producto: { include: { categoria: true, subcategoria: true } },
-  comercio: { select: { id: true, nombre: true, direccion: true } },
+  comercio: {
+    select: {
+      id: true,
+      nombre: true,
+      direccion: true,
+      localidad: true,
+      provincia: true,
+    },
+  },
 } satisfies Prisma.OfertaInclude;
 
 export type OfertaPublica = Prisma.OfertaGetPayload<{

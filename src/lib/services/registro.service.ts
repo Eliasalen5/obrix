@@ -118,6 +118,8 @@ export const registroService = {
         data: {
           nombre: solicitud.nombreFantasia,
           direccion: solicitud.direccion,
+          localidad: solicitud.localidad,
+          provincia: solicitud.provincia,
           lat: solicitud.lat,
           lng: solicitud.lng,
           telefono: solicitud.telefonoComercial || solicitud.telefonoTitular,

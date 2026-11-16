@@ -105,6 +105,8 @@ model Comercio {
   id            String                 @id @default(cuid())
   nombre        String
   direccion     String
+  localidad     String                 @default("")
+  provincia     String                 @default("")
   lat           Float
   lng           Float
   telefono      String                 @default("")

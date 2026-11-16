@@ -15,6 +15,7 @@ import {
 } from "@/lib/validators/vision";
 import { guardarProyectoPendiente } from "@/lib/proyecto/pendiente";
 import { visionApi } from "@/lib/api/visionClient";
+import { guardarFotoVision } from "@/lib/vision/foto";
 import { guardarResultadoVision } from "@/lib/vision/resultado";
 
 type Modo = "escribir" | "foto";
@@ -101,6 +102,7 @@ export default function HeroAsistente() {
       return;
     }
     guardarResultadoVision(res.data);
+    guardarFotoVision(foto);
     router.push("/busqueda/foto");
   }
 

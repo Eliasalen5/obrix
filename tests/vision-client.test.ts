@@ -50,3 +50,48 @@ describe("visionApi.identificar", () => {
     expect(init.headers).toBeUndefined();
   });
 });
+
+describe("visionApi.consultar", () => {
+  it("envía la pregunta y el contexto como JSON al endpoint /consulta", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: {
+          respuesta: "Encontré 1 producto.",
+          modo: "demo",
+          ofertas: [],
+        },
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await visionApi.consultar({
+      pregunta: "¿Tenés uno más largo?",
+      contexto: {
+        identificacion: {
+          objeto: "Tornillo",
+          tipo: "Autoperforante",
+          caracteristicas: [],
+          incertidumbres: ["Medidas"],
+          confianza: "probable",
+          terminos: "tornillo",
+          categoria: "Ferreterías",
+        },
+        detalle: "Sujetar chapa",
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe("/api/v1/vision/consulta");
+    expect(init.method).toBe("POST");
+    const body = JSON.parse(init.body as string);
+    expect(body.pregunta).toBe("¿Tenés uno más largo?");
+    expect(body.contexto.identificacion.objeto).toBe("Tornillo");
+    expect(body.contexto.detalle).toBe("Sujetar chapa");
+  });
+});

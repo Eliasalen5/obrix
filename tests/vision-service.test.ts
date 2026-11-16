@@ -12,15 +12,23 @@ vi.mock("@/lib/ofertas/buscarOfertas", () => ({
 const OFERTA = {
   id: "o1",
   precio: 8500,
+  stock: 40,
   marca: "Genérica",
   presentacion: "Caja x100",
   producto: {
     nombre: "Tornillos autoperforantes",
+    descripcion: "Tornillos autoperforantes para chapa.",
+    busqueda: "tornillos autoperforantes ferreteria",
     unidad: "caja x100",
     marca: "Genérica",
     categoria: { nombre: "Ferreterías" },
   },
-  comercio: { nombre: "Ferretería Demo", direccion: "Av. Siempre Viva 742" },
+  comercio: {
+    nombre: "Ferretería Demo",
+    direccion: "Av. Siempre Viva 742",
+    localidad: "CABA",
+    provincia: "Ciudad Autónoma de Buenos Aires",
+  },
 };
 
 beforeEach(() => {
@@ -43,12 +51,15 @@ describe("demoProvider.identificarImagen", () => {
     expect(mocks.buscarOfertasPublicas).toHaveBeenCalledWith({
       q: "tornillo",
       categoria: "Ferreterías",
-      take: 12,
+      take: 24,
     });
     expect(res.ofertas[0]).toMatchObject({
       id: "o1",
       productoNombre: "Tornillos autoperforantes",
       precio: 8500,
+      stock: 40,
+      localidad: "CABA, Ciudad Autónoma de Buenos Aires",
+      nivel: "alta",
     });
   });
 
@@ -63,7 +74,7 @@ describe("demoProvider.identificarImagen", () => {
     expect(mocks.buscarOfertasPublicas).toHaveBeenCalledWith({
       q: "impermeabilizante membrana",
       categoria: "Pinturerías",
-      take: 12,
+      take: 24,
     });
     expect(res.detalle).toBe("Necesito pintar una terraza");
   });
@@ -116,7 +127,7 @@ describe("vision.service", () => {
     expect(mocks.buscarOfertasPublicas).toHaveBeenCalledWith({
       q: "pieza",
       categoria: undefined,
-      take: 12,
+      take: 24,
     });
   });
 

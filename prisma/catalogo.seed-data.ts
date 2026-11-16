@@ -31,6 +31,8 @@ export type ComercioSeed = {
   email: string;
   nombre: string;
   direccion: string;
+  localidad: string;
+  provincia: string;
   telefono: string;
   lat: number;
   lng: number;
@@ -156,6 +158,8 @@ export const comerciosDemo: ComercioSeed[] = [
     email: "comercio@obrix.local",
     nombre: "Ferretería Demo",
     direccion: "Av. Siempre Viva 742",
+    localidad: "CABA",
+    provincia: "Ciudad Autónoma de Buenos Aires",
     telefono: "11-5555-5555",
     lat: -34.6037,
     lng: -58.3816,
@@ -171,6 +175,8 @@ export const comerciosDemo: ComercioSeed[] = [
     email: "comercio2@obrix.local",
     nombre: "Corralón Sur",
     direccion: "Av. Calchaquí 1500, Quilmes",
+    localidad: "Quilmes",
+    provincia: "Buenos Aires",
     telefono: "11-4444-4444",
     lat: -34.7245,
     lng: -58.2551,
@@ -185,6 +191,8 @@ export const comerciosDemo: ComercioSeed[] = [
     email: "comercio3@obrix.local",
     nombre: "Materiales Norte",
     direccion: "Av. Maipú 2100, Olivos",
+    localidad: "Olivos",
+    provincia: "Buenos Aires",
     telefono: "11-3333-3333",
     lat: -34.51,
     lng: -58.49,

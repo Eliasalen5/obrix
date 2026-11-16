@@ -1,5 +1,5 @@
 import { normalizarClave } from "@/lib/text/busqueda";
-import type { AiProvider } from "./types";
+import type { AiProvider, ContextoConsultaImagen } from "./types";
 
 type Insumo = {
   nombre: string;
@@ -223,6 +223,34 @@ export class DemoProvider implements AiProvider {
       confianza: "probable",
       terminos: sugerencia?.terminos ?? "tornillo",
       categoria: sugerencia?.categoria ?? "Ferreterías",
+    };
+  }
+
+  async responderConsultaImagen(
+    pregunta: string,
+    contexto: ContextoConsultaImagen,
+  ): Promise<unknown> {
+    // La demo interpreta la pregunta con las reglas del buscador de texto y,
+    // si no reconoce una variante, vuelve a los términos del objeto base.
+    const sugerencia = interpretarDemo(pregunta);
+    const textoPregunta = ` ${normalizarClave(pregunta)} `;
+    const esSoloDisponibilidad = /(comercio|venden|stock|disponibilidad|precio|cuanto cuesta)/.test(
+      textoPregunta,
+    );
+
+    if (esSoloDisponibilidad) {
+      return {
+        interpretacion:
+          "Querés saber dónde lo venden y su disponibilidad para el objeto de tu foto.",
+        terminos: contexto.terminos,
+        categoria: contexto.categoria,
+      };
+    }
+
+    return {
+      interpretacion: `Entiendo que buscás una opción relacionada con: "${pregunta.trim()}".`,
+      terminos: sugerencia.terminos,
+      categoria: sugerencia.categoria ?? contexto.categoria,
     };
   }
 

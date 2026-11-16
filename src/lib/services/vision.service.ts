@@ -7,21 +7,42 @@ import {
 } from "@/lib/ofertas/buscarOfertas";
 import { normalizarClave } from "@/lib/text/busqueda";
 import {
+  clavesDeIdentificacion,
+  clasificarOferta,
+  type Clasificacion,
+} from "@/lib/vision/coincidencias";
+import {
   identificacionVisualSchema,
+  type OfertaCompatible,
   type VisionResponse,
 } from "@/lib/validators/vision";
 
-function mapearOferta(oferta: OfertaPublica) {
+const PESO_NIVEL = { alta: 0, probable: 1, similar: 2 } as const;
+const TAKE_PRINCIPALES = 24;
+const TAKE_AMPLIACION = 24;
+const MAX_RESULTADOS = 12;
+
+function mapearOferta(
+  oferta: OfertaPublica,
+  clasificacion: Clasificacion,
+): OfertaCompatible {
   return {
     id: oferta.id,
     productoNombre: oferta.producto.nombre,
+    descripcion: oferta.producto.descripcion,
     marca: oferta.marca || oferta.producto.marca,
     presentacion: oferta.presentacion,
     unidad: oferta.producto.unidad,
     precio: oferta.precio,
+    stock: oferta.stock,
     categoria: oferta.producto.categoria.nombre,
     comercioNombre: oferta.comercio.nombre,
     comercioDireccion: oferta.comercio.direccion,
+    localidad: [oferta.comercio.localidad, oferta.comercio.provincia]
+      .filter(Boolean)
+      .join(", "),
+    nivel: clasificacion.nivel,
+    caracteristicasCoincidentes: clasificacion.caracteristicasCoincidentes,
   };
 }
 
@@ -60,16 +81,54 @@ export async function identificarYBuscar(
   )?.nombre;
   const identificacion = { ...parsed.data, categoria };
 
-  const ofertas = await buscarOfertasPublicas({
-    q: identificacion.terminos,
-    categoria,
-    take: 12,
-  });
+  const ofertas = await buscarCoincidencias(identificacion, categoria);
 
   return {
     identificacion,
     modo: provider.esDemo ? "demo" : "real",
-    ofertas: ofertas.map(mapearOferta),
+    ofertas,
     detalle: opts.detalle?.trim() || undefined,
   };
+}
+
+/**
+ * Busca ofertas del catálogo para la identificación. La búsqueda principal usa
+ * los términos (AND estricto); la ampliación por categoría aporta coincidencias
+ * probables y alternativas similares. Los productos siempre salen de la DB.
+ */
+export async function buscarCoincidencias(
+  identificacion: VisionResponse["identificacion"],
+  categoria: string | undefined,
+): Promise<OfertaCompatible[]> {
+  const claves = clavesDeIdentificacion(identificacion);
+
+  const principales = await buscarOfertasPublicas({
+    q: identificacion.terminos,
+    categoria,
+    take: TAKE_PRINCIPALES,
+  });
+
+  // Sin categoría no hay forma razonable de ampliar sin traer ruido: devolvemos
+  // solo las coincidencias directas (todas contendrán los términos).
+  const ampliacion = categoria
+    ? await buscarOfertasPublicas({ categoria, take: TAKE_AMPLIACION })
+    : [];
+
+  const vistas = new Set<string>();
+  const mapeadas: OfertaCompatible[] = [];
+
+  for (const oferta of [...principales, ...ampliacion]) {
+    if (vistas.has(oferta.id)) continue;
+    vistas.add(oferta.id);
+    mapeadas.push(
+      mapearOferta(
+        oferta,
+        clasificarOferta(oferta, claves, identificacion.caracteristicas),
+      ),
+    );
+  }
+
+  return mapeadas
+    .sort((a, b) => PESO_NIVEL[a.nivel] - PESO_NIVEL[b.nivel])
+    .slice(0, MAX_RESULTADOS);
 }

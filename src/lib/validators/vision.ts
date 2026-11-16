@@ -49,16 +49,25 @@ export const identificacionVisualSchema = z.object({
 
 export type IdentificacionVisual = z.infer<typeof identificacionVisualSchema>;
 
+export const nivelesCoincidencia = ["alta", "probable", "similar"] as const;
+export const nivelCoincidenciaSchema = z.enum(nivelesCoincidencia);
+export type NivelCoincidencia = z.infer<typeof nivelCoincidenciaSchema>;
+
 export const ofertaCompatibleSchema = z.object({
   id: z.string().min(1),
   productoNombre: z.string().min(1),
+  descripcion: z.string(),
   marca: z.string(),
   presentacion: z.string(),
   unidad: z.string(),
   precio: z.number().finite().nonnegative(),
+  stock: z.number().int(), // -1 = sin control de stock
   categoria: z.string().min(1),
   comercioNombre: z.string().min(1),
   comercioDireccion: z.string(),
+  localidad: z.string(),
+  nivel: nivelCoincidenciaSchema,
+  caracteristicasCoincidentes: z.array(z.string().trim().min(1).max(200)).max(12),
 });
 
 export const visionResponseSchema = z.object({
@@ -70,6 +79,34 @@ export const visionResponseSchema = z.object({
 
 export type OfertaCompatible = z.infer<typeof ofertaCompatibleSchema>;
 export type VisionResponse = z.infer<typeof visionResponseSchema>;
+
+/** Lo que devuelve la IA al interpretar una pregunta de seguimiento. */
+export const interpretacionConsultaSchema = z.object({
+  interpretacion: z.string().trim().min(1).max(400),
+  terminos: z.string().trim().min(1).max(200),
+  categoria: z.string().trim().max(120).optional(),
+});
+export type InterpretacionConsulta = z.infer<typeof interpretacionConsultaSchema>;
+
+export const consultaVisionRequestSchema = z.object({
+  pregunta: z
+    .string({ message: "Escribí tu pregunta" })
+    .trim()
+    .min(3, "Escribí al menos 3 caracteres")
+    .max(300, "La pregunta es demasiado larga (máximo 300 caracteres)"),
+  contexto: z.object({
+    identificacion: identificacionVisualSchema,
+    detalle: z.string().trim().max(DETALLE_MAX).optional(),
+  }),
+});
+export type ConsultaVisionRequest = z.infer<typeof consultaVisionRequestSchema>;
+
+export const consultaVisionResponseSchema = z.object({
+  respuesta: z.string().min(1),
+  modo: z.enum(["demo", "real"]),
+  ofertas: z.array(ofertaCompatibleSchema).max(12),
+});
+export type ConsultaVisionResponse = z.infer<typeof consultaVisionResponseSchema>;
 
 /** Firma mínima del contenido; no confiamos solo en el MIME del navegador. */
 export function tieneFirmaImagenValida(

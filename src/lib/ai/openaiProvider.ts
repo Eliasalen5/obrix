@@ -2,10 +2,11 @@ import type { AiConfig } from "./config";
 import { AiProviderError } from "./errors";
 import {
   BUSQUEDA_SYSTEM_PROMPT,
+  CONSULTA_VISION_SYSTEM_PROMPT,
   SYSTEM_PROMPT,
   VISION_SYSTEM_PROMPT,
 } from "./prompt";
-import type { AiProvider } from "./types";
+import type { AiProvider, ContextoConsultaImagen } from "./types";
 
 export type FetchLike = (
   input: string,
@@ -61,6 +62,22 @@ export class OpenAiProvider implements AiProvider {
       ],
       signal,
     );
+  }
+
+  responderConsultaImagen(
+    pregunta: string,
+    contexto: ContextoConsultaImagen,
+    signal: AbortSignal,
+  ): Promise<unknown> {
+    const resumenContexto =
+      `Identificación previa: objeto="${contexto.objeto}", tipo="${contexto.tipo}", ` +
+      `características=[${contexto.caracteristicas.join("; ")}], términos base="${contexto.terminos}"` +
+      (contexto.categoria ? `, categoría="${contexto.categoria}"` : "") +
+      (contexto.detalle ? `, tarea del usuario="${contexto.detalle}"` : "") +
+      ".";
+    const contenido = `${resumenContexto}\nPregunta de seguimiento del usuario: "${pregunta}". Devolvé la interpretación y los términos para buscar en el catálogo.`;
+
+    return this.completarJson(CONSULTA_VISION_SYSTEM_PROMPT, contenido, signal);
   }
 
   private async completarJson(

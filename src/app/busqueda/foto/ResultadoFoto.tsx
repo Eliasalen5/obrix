@@ -2,18 +2,51 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import OfertaCard from "@/app/ofertas/OfertaCard";
+import { limpiarFotoVision, obtenerFotoVision } from "@/lib/vision/foto";
 import { obtenerResultadoVision } from "@/lib/vision/resultado";
-import type { VisionResponse } from "@/lib/validators/vision";
+import type {
+  NivelCoincidencia,
+  OfertaCompatible,
+  VisionResponse,
+} from "@/lib/validators/vision";
+import ConsultaFoto from "./ConsultaFoto";
+import OfertaCompatCard from "./OfertaCompatCard";
+
+const SECCIONES: {
+  nivel: NivelCoincidencia;
+  titulo: string;
+  descripcion: string;
+}[] = [
+  {
+    nivel: "alta",
+    titulo: "Coincidencias altas",
+    descripcion: "Productos que contienen los términos de tu identificación.",
+  },
+  {
+    nivel: "probable",
+    titulo: "Coincidencias probables",
+    descripcion: "Comparten parte de las características reconocidas.",
+  },
+  {
+    nivel: "similar",
+    titulo: "Alternativas similares",
+    descripcion: "Misma categoría; revisá si sirven para tu caso.",
+  },
+];
 
 export default function ResultadoFoto() {
   const [resultado, setResultado] = useState<VisionResponse | null>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [cargado, setCargado] = useState(false);
 
   useEffect(() => {
     setResultado(obtenerResultadoVision());
+    setFotoUrl(obtenerFotoVision());
     setCargado(true);
   }, []);
+
+  // Revocar el object URL al salir de la página.
+  useEffect(() => () => limpiarFotoVision(), []);
 
   if (!cargado) {
     return (
@@ -49,6 +82,12 @@ export default function ResultadoFoto() {
     filtros.set("categoria", identificacion.categoria);
   }
 
+  const grupos: Record<NivelCoincidencia, OfertaCompatible[]> = {
+    alta: ofertas.filter((o) => o.nivel === "alta"),
+    probable: ofertas.filter((o) => o.nivel === "probable"),
+    similar: ofertas.filter((o) => o.nivel === "similar"),
+  };
+
   return (
     <main className="flex-1 bg-obrix-white text-obrix-black">
       <div className="mx-auto w-full max-w-6xl px-4 py-10">
@@ -57,7 +96,7 @@ export default function ResultadoFoto() {
           className="mb-3 block h-1 w-12 rounded-full bg-obrix-orange"
         />
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Identificación por fotografía
+          Encontramos productos que coinciden con tu imagen
         </h1>
         {resultado.detalle && (
           <p className="mt-2 text-sm text-neutral-600">
@@ -67,6 +106,20 @@ export default function ResultadoFoto() {
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <section className="rounded-2xl border border-neutral-200 p-5">
+            {fotoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={fotoUrl}
+                alt="Fotografía que subiste"
+                className="mb-4 aspect-[4/3] w-full rounded-xl border border-neutral-200 object-cover"
+              />
+            ) : (
+              <div className="mb-4 flex aspect-[4/3] w-full items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-obrix-gray text-sm text-neutral-500">
+                La foto se muestra solo en esta sesión. Si recargaste la página,
+                analizá otra vez.
+              </div>
+            )}
+
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
@@ -93,7 +146,7 @@ export default function ResultadoFoto() {
               </p>
             )}
 
-            <h3 className="mt-5 font-semibold">Características visibles</h3>
+            <h3 className="mt-5 font-semibold">Características reconocidas</h3>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-600">
               {identificacion.caracteristicas.map((item) => (
                 <li key={item}>{item}</li>
@@ -120,9 +173,11 @@ export default function ResultadoFoto() {
           </section>
         </div>
 
+        <ConsultaFoto identificacion={identificacion} detalle={resultado.detalle} />
+
         <div className="mt-10 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold">Productos compatibles</h2>
+            <h2 className="text-2xl font-bold">Productos coincidentes</h2>
             <p className="mt-1 text-sm text-neutral-600">
               Búsqueda: “{identificacion.terminos}” · {ofertas.length}{" "}
               {ofertas.length === 1 ? "oferta" : "ofertas"}
@@ -145,21 +200,21 @@ export default function ResultadoFoto() {
         </div>
 
         {ofertas.length > 0 ? (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {ofertas.map((oferta) => (
-              <OfertaCard
-                key={oferta.id}
-                productoNombre={oferta.productoNombre}
-                marca={oferta.marca}
-                presentacion={oferta.presentacion}
-                unidad={oferta.unidad}
-                precio={oferta.precio}
-                categoria={oferta.categoria}
-                comercioNombre={oferta.comercioNombre}
-                comercioDireccion={oferta.comercioDireccion}
-              />
-            ))}
-          </div>
+          SECCIONES.map((seccion) => {
+            const items = grupos[seccion.nivel];
+            if (items.length === 0) return null;
+            return (
+              <section key={seccion.nivel} className="mt-8">
+                <h3 className="text-lg font-semibold">{seccion.titulo}</h3>
+                <p className="text-sm text-neutral-600">{seccion.descripcion}</p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.map((oferta) => (
+                    <OfertaCompatCard key={oferta.id} oferta={oferta} />
+                  ))}
+                </div>
+              </section>
+            );
+          })
         ) : (
           <div className="mt-6 rounded-2xl border border-neutral-200 bg-obrix-gray p-6 text-center">
             <p className="font-semibold">

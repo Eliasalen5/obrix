@@ -1,8 +1,14 @@
 import { request } from "./httpClient";
-import type { VisionResponse } from "@/lib/validators/vision";
+import type {
+  ConsultaVisionRequest,
+  ConsultaVisionResponse,
+  VisionResponse,
+} from "@/lib/validators/vision";
 
 export type { ApiResult, ApiErrorDetail } from "./httpClient";
 export type {
+  ConsultaVisionRequest,
+  ConsultaVisionResponse,
   IdentificacionVisual,
   OfertaCompatible,
   VisionResponse,
@@ -17,4 +23,9 @@ export const visionApi = {
     form.append("detalle", detalle);
     return request<VisionResponse>(BASE, { method: "POST", body: form });
   },
+  consultar: (input: ConsultaVisionRequest) =>
+    request<ConsultaVisionResponse>(`${BASE}/consulta`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
 };

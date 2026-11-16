@@ -58,6 +58,8 @@ async function seedUsuarios() {
       create: {
         nombre: c.nombre,
         direccion: c.direccion,
+        localidad: c.localidad,
+        provincia: c.provincia,
         lat: c.lat,
         lng: c.lng,
         telefono: c.telefono,
@@ -66,6 +68,8 @@ async function seedUsuarios() {
       update: {
         nombre: c.nombre,
         direccion: c.direccion,
+        localidad: c.localidad,
+        provincia: c.provincia,
         lat: c.lat,
         lng: c.lng,
         telefono: c.telefono,

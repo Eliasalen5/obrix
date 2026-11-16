@@ -1,3 +1,7 @@
+import {
+  includeOfertaPublica,
+  type OfertaPublica,
+} from "@/lib/ofertas/buscarOfertas";
 import { prisma } from "@/lib/prisma";
 import type {
   CreateOfertaInput,
@@ -7,6 +11,16 @@ import type {
 const includeProducto = {
   producto: { include: { categoria: true, subcategoria: true } },
 } as const;
+
+/** Oferta pública por id, solo si está activa y su comercio está activo. */
+export async function obtenerOfertaPublica(
+  id: string,
+): Promise<OfertaPublica | null> {
+  return prisma.oferta.findFirst({
+    where: { id, activo: true, comercio: { activo: true } },
+    include: includeOfertaPublica,
+  });
+}
 
 export const ofertaService = {
   listByComercio(comercioId: string) {
