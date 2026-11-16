@@ -134,8 +134,8 @@ export default function HeroAsistente() {
             </span>
           </h1>
           <p className="mt-5 text-lg text-neutral-200">
-            Contá tu proyecto escribiendo o con una foto. Cuantos más detalles
-            des, mejor te resuelve la IA.
+            Contá tu proyecto, cuantos más detalles des, mejor te resuelve
+            Obrix.
           </p>
 
           <div className="mt-8 rounded-2xl border border-neutral-200 bg-obrix-white p-2 text-left shadow-[0_24px_70px_-40px_rgba(23,23,23,0.45)] ring-1 ring-black/5">
