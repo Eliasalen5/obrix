@@ -118,7 +118,7 @@ function FooterSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </summary>
-      <div className="mt-3 space-y-2 lg:mt-0 lg:space-y-3">{children}</div>
+      <div className="mt-2 space-y-1.5 lg:mt-0 lg:space-y-2">{children}</div>
     </details>
   );
 }
@@ -126,14 +126,14 @@ function FooterSection({
 export default function Footer() {
   return (
     <footer role="contentinfo" className="bg-obrix-black text-obrix-white border-t border-neutral-800">
-      <div className="mx-auto max-w-7xl px-4 py-10 lg:py-14">
-        <div className="grid gap-6 lg:gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mx-auto max-w-7xl px-4 py-6 lg:py-8">
+        <div className="grid gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand - 2 cols en lg */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-3">
             <Link href="/" className="flex items-center gap-2" aria-label="Obrix, ir al inicio">
-              <Image src="/logo.jpg" alt="" width={32} height={32} className="h-8 w-auto rounded-lg object-contain" />
+              <Image src="/logo.jpg" alt="" width={28} height={28} className="h-7 w-auto rounded-lg object-contain" />
             </Link>
-            <p className="text-sm text-neutral-300 max-w-xs">
+            <p className="text-xs text-neutral-300 max-w-xs">
               Obrix: materiales, precios y pedidos en un click.
             </p>
             <div className="flex gap-4 lg:hidden" aria-label="Redes sociales">
@@ -153,12 +153,12 @@ export default function Footer() {
           </div>
 
           {/* Producto */}
-          <nav aria-label="Producto" className="space-y-3">
-            <h3 className="text-sm font-semibold text-obrix-white uppercase tracking-wide">Producto</h3>
+          <nav aria-label="Producto" className="space-y-2">
+            <h3 className="text-xs font-semibold text-obrix-white uppercase tracking-wide">Producto</h3>
             {FOOTER_LINKS.producto.map((group) => (
-              <div key={group.title} className="space-y-2">
+              <div key={group.title} className="space-y-1.5">
                 <h4 className="text-xs font-medium text-obrix-orange uppercase tracking-wider">{group.title}</h4>
-                <ul className="space-y-1.5">
+                <ul className="space-y-1">
                   {group.links.map((link) => (
                     <li key={link.href}>
                       <Link href={link.href} className="text-sm text-neutral-300 hover:text-obrix-orange transition-colors">
@@ -172,9 +172,9 @@ export default function Footer() {
           </nav>
 
           {/* Ayuda */}
-          <nav aria-label="Ayuda" className="space-y-3">
-            <h3 className="text-sm font-semibold text-obrix-white uppercase tracking-wide">Ayuda</h3>
-            <ul className="space-y-2">
+          <nav aria-label="Ayuda" className="space-y-2">
+            <h3 className="text-xs font-semibold text-obrix-white uppercase tracking-wide">Ayuda</h3>
+            <ul className="space-y-1.5">
               {FOOTER_LINKS.ayuda.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-sm text-neutral-300 hover:text-obrix-orange transition-colors">
@@ -186,9 +186,9 @@ export default function Footer() {
           </nav>
 
           {/* Legal */}
-          <nav aria-label="Legal" className="space-y-3">
-            <h3 className="text-sm font-semibold text-obrix-white uppercase tracking-wide">Legal</h3>
-            <ul className="space-y-2">
+          <nav aria-label="Legal" className="space-y-2">
+            <h3 className="text-xs font-semibold text-obrix-white uppercase tracking-wide">Legal</h3>
+            <ul className="space-y-1.5">
               {FOOTER_LINKS.legal.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-sm text-neutral-300 hover:text-obrix-orange transition-colors">
@@ -200,9 +200,9 @@ export default function Footer() {
           </nav>
 
           {/* Confianza - solo desktop como columna, en mobile dentro de acordeón */}
-          <div className="hidden lg:block space-y-3">
-            <h3 className="text-sm font-semibold text-obrix-white uppercase tracking-wide">Confianza</h3>
-            <ul className="space-y-2" role="list" aria-label="Badges de confianza">
+          <div className="hidden lg:block space-y-2">
+            <h3 className="text-xs font-semibold text-obrix-white uppercase tracking-wide">Confianza</h3>
+            <ul className="space-y-1.5" role="list" aria-label="Badges de confianza">
               {FOOTER_LINKS.confianza.map((badge) => (
                 <li key={badge} className="flex items-center gap-2 text-sm text-neutral-300">
                   <svg className="h-4 w-4 text-obrix-orange flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -216,7 +216,7 @@ export default function Footer() {
         </div>
 
         {/* Mobile: Confianza como acordeón */}
-        <div className="lg:hidden mt-8 pt-8 border-t border-neutral-800">
+        <div className="lg:hidden mt-4 pt-4 border-t border-neutral-800">
           <FooterSection title="Confianza">
             <ul className="space-y-2" role="list" aria-label="Badges de confianza">
               {FOOTER_LINKS.confianza.map((badge) => (
@@ -232,7 +232,7 @@ export default function Footer() {
         </div>
 
         {/* Redes sociales - solo desktop */}
-        <div className="hidden lg:flex lg:justify-end lg:items-center mt-10 pt-8 border-t border-neutral-800">
+        <div className="hidden lg:flex lg:justify-end lg:items-center mt-6 pt-4 border-t border-neutral-800">
           <p className="text-xs text-neutral-500 mr-4">Síguenos:</p>
           <div className="flex gap-4" aria-label="Redes sociales">
             {SOCIAL_LINKS.map((social) => (
@@ -251,7 +251,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 pt-8 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-6 pt-4 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-neutral-500 text-center sm:text-left">
             © {currentYear} Obrix. Todos los derechos reservados.
           </p>
