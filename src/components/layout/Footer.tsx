@@ -171,7 +171,7 @@ export default function Footer() {
             </nav>
           </FooterColumn>
 
-          {/* Legal + Redes sociales */}
+          {/* Legal */}
           <FooterColumn title="Legal">
             <nav aria-label="Información legal">
               <ul className="space-y-2">
@@ -184,21 +184,25 @@ export default function Footer() {
                 ))}
               </ul>
             </nav>
-            <div className="hidden lg:flex lg:justify-end gap-3 mt-4 pt-4 border-t border-neutral-800" aria-label="Redes sociales">
-              {SOCIAL_LINKS.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.href}
-                  aria-label={social.ariaLabel}
-                  className="text-neutral-500 hover:text-obrix-orange transition-colors"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <SocialIcon name={social.name} />
-                </a>
-              ))}
-            </div>
           </FooterColumn>
+        </div>
+
+        {/* Redes sociales - solo desktop */}
+        <div className="hidden lg:flex lg:justify-end lg:items-center mt-4 pt-4 border-t border-neutral-800">
+          <div className="flex gap-3" aria-label="Redes sociales">
+            {SOCIAL_LINKS.map((social) => (
+              <a
+                key={social.name}
+                href={social.href}
+                aria-label={social.ariaLabel}
+                className="text-neutral-500 hover:text-obrix-orange transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <SocialIcon name={social.name} />
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* Bottom bar */}
