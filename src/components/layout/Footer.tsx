@@ -103,7 +103,7 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-4 lg:py-6">
         <div className="grid gap-4 lg:gap-8 grid-cols-2 lg:grid-cols-5">
           {/* Marca */}
-          <div className="lg:col-span-2 space-y-2">
+          <div className="lg:col-span-1 space-y-2">
             <Link href="/" className="flex items-center gap-2" aria-label="Obrix, ir al inicio">
               <Image src="/logo.jpg" alt="" width={28} height={28} className="h-7 w-auto rounded-lg object-contain" />
             </Link>
