@@ -1,16 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ofertaApi,
-  type Oferta,
-} from "@/lib/api/ofertaClient";
-import {
-  comercioPedidoApi,
-  type EstadoPedido,
-  type Pedido,
-} from "@/lib/api/pedidoClient";
+  comercioResumenApi,
+  type ResumenComercio as Resumen,
+} from "@/lib/api/comercioClient";
+import type { EstadoPedido } from "@/lib/api/pedidoClient";
 import {
   Alert,
   Badge,
@@ -19,6 +15,7 @@ import {
   CardHeader,
   EmptyState,
   KpiCard,
+  SkeletonRows,
   type BadgeTone,
 } from "@/components/ui";
 
@@ -33,7 +30,7 @@ const fecha = new Intl.DateTimeFormat("es-AR", {
   timeStyle: "short",
 });
 
-const ESTADO_TONE: Record<EstadoPedido, BadgeTone> = {
+const ESTADO_TONE: Record<string, BadgeTone> = {
   PENDIENTE: "warning",
   CONFIRMADO: "info",
   PREPARADO: "orange",
@@ -44,22 +41,16 @@ const ESTADO_TONE: Record<EstadoPedido, BadgeTone> = {
 const LIMITE_INICIAL = 50;
 
 export default function ResumenComercio() {
-  const [ofertas, setOfertas] = useState<Oferta[]>([]);
-  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [resumen, setResumen] = useState<Resumen | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
-    const [resOfertas, resPedidos] = await Promise.all([
-      ofertaApi.listOfertas(),
-      comercioPedidoApi.listar(),
-    ]);
-    if (resOfertas.ok) setOfertas(resOfertas.data);
-    else setError(resOfertas.error);
-    if (resPedidos.ok) setPedidos(resPedidos.data);
-    else setError(resPedidos.error);
+    const res = await comercioResumenApi.get();
+    if (res.ok) setResumen(res.data);
+    else setError(res.error);
     setCargando(false);
   }, []);
 
@@ -67,21 +58,9 @@ export default function ResumenComercio() {
     void cargar();
   }, [cargar]);
 
-  const pendientes = useMemo(
-    () => pedidos.filter((p) => p.estado === "PENDIENTE"),
-    [pedidos],
-  );
-
-  const ventas = useMemo(
-    () =>
-      pedidos
-        .filter((p) => p.estado !== "CANCELADO")
-        .reduce((total, p) => total + p.total, 0),
-    [pedidos],
-  );
-
-  const recientes = useMemo(() => pedidos.slice(0, 5), [pedidos]);
-  const usoPct = Math.min(100, Math.round((ofertas.length / LIMITE_INICIAL) * 100));
+  const usoPct = resumen
+    ? Math.min(100, Math.round((resumen.productos.publicados / LIMITE_INICIAL) * 100))
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -90,26 +69,41 @@ export default function ResumenComercio() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Productos publicados"
-          value={ofertas.length}
+          value={resumen?.productos.publicados ?? 0}
           hint={`${usoPct}% del límite de ${LIMITE_INICIAL} (Plan Inicial)`}
           loading={cargando}
         />
         <KpiCard
           label="Pedidos pendientes"
-          value={pendientes.length}
+          value={resumen?.pedidos.pendientes ?? 0}
           hint="Requieren tu confirmación"
           loading={cargando}
         />
         <KpiCard
           label="Pedidos totales"
-          value={pedidos.length}
+          value={resumen?.pedidos.total ?? 0}
           hint="Histórico acumulado"
           loading={cargando}
         />
         <KpiCard
           label="Ventas registradas"
-          value={money.format(ventas)}
+          value={money.format(resumen?.ventas.total ?? 0)}
           hint="Excluye pedidos cancelados"
+          loading={cargando}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <KpiCard
+          label="Ventas del mes"
+          value={money.format(resumen?.ventas.mes ?? 0)}
+          hint="Mes en curso"
+          loading={cargando}
+        />
+        <KpiCard
+          label="Ticket promedio"
+          value={money.format(resumen?.ventas.ticketPromedio ?? 0)}
+          hint="Sobre pedidos no cancelados"
           loading={cargando}
         />
       </div>
@@ -128,11 +122,8 @@ export default function ResumenComercio() {
             }
           />
           {cargando ? (
-            <div className="space-y-2 p-5">
-              <div className="h-10 animate-pulse rounded-lg bg-neutral-200/80" />
-              <div className="h-10 animate-pulse rounded-lg bg-neutral-200/80" />
-            </div>
-          ) : recientes.length === 0 ? (
+            <SkeletonRows rows={3} />
+          ) : !resumen || resumen.recientes.length === 0 ? (
             <EmptyState
               className="m-5 border-0 bg-transparent py-8"
               title="Todavía no recibiste pedidos"
@@ -140,7 +131,7 @@ export default function ResumenComercio() {
             />
           ) : (
             <ul className="divide-y divide-neutral-100">
-              {recientes.map((pedido) => (
+              {resumen.recientes.map((pedido) => (
                 <li
                   key={pedido.id}
                   className="flex items-center justify-between gap-3 px-5 py-3"
@@ -150,12 +141,14 @@ export default function ResumenComercio() {
                       Pedido #{pedido.id.slice(-6).toUpperCase()}
                     </p>
                     <p className="text-xs text-neutral-500">
-                      {fecha.format(new Date(pedido.createdAt))}
+                      {fecha.format(new Date(pedido.createdAt))} ·{" "}
+                      {pedido.itemsCount}{" "}
+                      {pedido.itemsCount === 1 ? "ítem" : "ítems"}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge tone={ESTADO_TONE[pedido.estado]}>
-                      {pedido.estado}
+                    <Badge tone={ESTADO_TONE[pedido.estado] ?? "neutral"}>
+                      {pedido.estado as EstadoPedido}
                     </Badge>
                     <span className="text-sm font-semibold">
                       {money.format(pedido.total)}
