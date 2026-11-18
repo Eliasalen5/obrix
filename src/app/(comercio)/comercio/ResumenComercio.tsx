@@ -38,8 +38,6 @@ const ESTADO_TONE: Record<string, BadgeTone> = {
   CANCELADO: "danger",
 };
 
-const LIMITE_INICIAL = 50;
-
 export default function ResumenComercio() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -58,9 +56,11 @@ export default function ResumenComercio() {
     void cargar();
   }, [cargar]);
 
-  const usoPct = resumen
-    ? Math.min(100, Math.round((resumen.productos.publicados / LIMITE_INICIAL) * 100))
-    : 0;
+  const limite = resumen?.plan.limiteProductos ?? null;
+  const usoPct =
+    resumen && limite !== null
+      ? Math.min(100, Math.round((resumen.productos.publicados / limite) * 100))
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -70,7 +70,11 @@ export default function ResumenComercio() {
         <KpiCard
           label="Productos publicados"
           value={resumen?.productos.publicados ?? 0}
-          hint={`${usoPct}% del límite de ${LIMITE_INICIAL} (Plan Inicial)`}
+          hint={
+            limite === null
+              ? `${resumen?.plan.nombre ?? "Tu plan"} · productos ilimitados`
+              : `${usoPct}% del límite de ${limite} (${resumen?.plan.nombre})`
+          }
           loading={cargando}
         />
         <KpiCard

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Badge } from "@/components/ui";
+import { getPlan } from "@/lib/planes";
 import { cn } from "@/lib/ui/cn";
 
 type IconName =
@@ -240,12 +241,15 @@ function NavList({
 function SidebarContent({
   pathname,
   comercioNombre,
+  planId,
   onNavigate,
 }: {
   pathname: string;
   comercioNombre: string;
+  planId: string;
   onNavigate?: () => void;
 }) {
+  const plan = getPlan(planId);
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-5">
       <Link
@@ -271,13 +275,19 @@ function SidebarContent({
 
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold text-obrix-white">Plan Inicial</p>
+          <p className="text-xs font-semibold text-obrix-white">{plan.nombre}</p>
           <span className="rounded-full bg-obrix-orange/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-obrix-orange">
             Actual
           </span>
         </div>
         <p className="mt-1 text-[11px] leading-relaxed text-neutral-400">
           {comercioNombre}
+        </p>
+        <p className="mt-1 text-[11px] text-neutral-400">
+          Comisión {plan.comisionPct}% ·{" "}
+          {plan.limiteProductos === null
+            ? "Productos ilimitados"
+            : `${plan.limiteProductos} productos`}
         </p>
         <button
           type="button"
@@ -294,9 +304,11 @@ function SidebarContent({
 
 export default function CommerceShell({
   comercioNombre,
+  planId,
   children,
 }: {
   comercioNombre: string;
+  planId: string;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -304,6 +316,7 @@ export default function CommerceShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
+  const plan = getPlan(planId);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -338,7 +351,11 @@ export default function CommerceShell({
   return (
     <div className="min-h-screen bg-obrix-gray text-obrix-black">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 bg-obrix-black lg:block">
-        <SidebarContent pathname={pathname} comercioNombre={comercioNombre} />
+        <SidebarContent
+          pathname={pathname}
+          comercioNombre={comercioNombre}
+          planId={planId}
+        />
       </aside>
 
       {mobileOpen ? (
@@ -353,6 +370,7 @@ export default function CommerceShell({
             <SidebarContent
               pathname={pathname}
               comercioNombre={comercioNombre}
+              planId={planId}
               onNavigate={() => setMobileOpen(false)}
             />
           </div>
@@ -381,7 +399,7 @@ export default function CommerceShell({
 
           <div className="ml-auto flex items-center gap-2">
             <Badge tone="orange" className="hidden sm:inline-flex">
-              Plan Inicial
+              {plan.nombre}
             </Badge>
 
             <div ref={accountRef} className="relative">

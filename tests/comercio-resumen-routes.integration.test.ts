@@ -30,7 +30,11 @@ const db = prisma as unknown as DbMock;
 
 function conComercio() {
   sessionMock.mockResolvedValue({ userId: "u1", role: ROLES.COMERCIO as Role });
-  db.comercio.findUnique.mockResolvedValue({ id: "com1", activo: true });
+  db.comercio.findUnique.mockResolvedValue({
+    id: "com1",
+    activo: true,
+    plan: "INICIAL",
+  });
 }
 
 function conComercioInactivo() {
@@ -115,6 +119,12 @@ describe("comercio — resumen: agregados", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data).toMatchObject({
+      plan: {
+        id: "INICIAL",
+        nombre: "Obrix Inicial",
+        comisionPct: 6,
+        limiteProductos: 50,
+      },
       productos: { publicados: 8, activos: 6 },
       pedidos: { total: 10, pendientes: 2 },
       ventas: { total: 7000, mes: 1200, ticketPromedio: 1000 },

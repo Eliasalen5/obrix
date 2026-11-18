@@ -8,6 +8,11 @@ export default async function ComercioLayout({
 }) {
   const { comercio } = await requireComercioSession();
   return (
-    <CommerceShell comercioNombre={comercio.nombre}>{children}</CommerceShell>
+    <CommerceShell
+      comercioNombre={comercio.nombre}
+      planId={comercio.plan}
+    >
+      {children}
+    </CommerceShell>
   );
 }

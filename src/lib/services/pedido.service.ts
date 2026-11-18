@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ROLES } from "@/lib/auth/constants";
+import { comisionPctDePlan } from "@/lib/planes";
 import { type CrearPedidoInput, type EstadoPedido } from "@/lib/validators/pedido";
 import { puedeTransicionar, redondear2 } from "./pedido-estado";
 
@@ -21,6 +22,8 @@ export type PedidoDetalle = {
   cotizacionId: string | null;
   estado: string;
   total: number;
+  comisionPct: number;
+  comisionMonto: number;
   createdAt: Date;
   comercio: {
     id: string;
@@ -64,7 +67,7 @@ export const pedidoService = {
 
     const comercio = await prisma.comercio.findFirst({
       where: { id: input.comercioId, activo: true },
-      select: { id: true },
+      select: { id: true, plan: true },
     });
     if (!comercio) return { ok: false, motivo: "NO_COMERCIO" };
 
@@ -112,6 +115,10 @@ export const pedidoService = {
       ),
     );
 
+    // Snapshot de la comisión del plan al momento de crear el pedido.
+    const comisionPct = comisionPctDePlan(comercio.plan);
+    const comisionMonto = redondear2((total * comisionPct) / 100);
+
     const pedido = await prisma.pedido.create({
       data: {
         clienteId,
@@ -119,6 +126,8 @@ export const pedidoService = {
         cotizacionId: cotizacion.id,
         estado: "PENDIENTE",
         total,
+        comisionPct,
+        comisionMonto,
         items: { create: items },
       },
       include: detallePedido,

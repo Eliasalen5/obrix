@@ -24,6 +24,12 @@ export type ResumenPedidoReciente = {
 };
 
 export type ResumenComercio = {
+  plan: {
+    id: string;
+    nombre: string;
+    comisionPct: number;
+    limiteProductos: number | null;
+  };
   productos: { publicados: number; activos: number };
   pedidos: { total: number; pendientes: number };
   ventas: { total: number; mes: number; ticketPromedio: number };

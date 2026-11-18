@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireComercioApi } from "@/lib/auth/apiAuth";
 import { jsonError, prismaErrorResponse, zodDetails } from "@/lib/api/http";
 import { createOfertaSchema } from "@/lib/validators/oferta";
-import { ofertaService } from "@/lib/services/oferta.service";
+import { OfertaError, ofertaService } from "@/lib/services/oferta.service";
 
 export async function GET() {
   const access = await requireComercioApi();
@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
     );
     return Response.json({ data }, { status: 201 });
   } catch (error) {
+    if (error instanceof OfertaError) {
+      return jsonError(error.status, error.message);
+    }
     return prismaErrorResponse(error);
   }
 }

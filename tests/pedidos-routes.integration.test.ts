@@ -197,8 +197,17 @@ describe("pedidos (cliente) — creación desde cotización", () => {
     expect(body.data.comercio.nombre).toBe("Ferretería A");
   });
 
-  it("usa el clienteId de la sesión e ignora el del body (aislamiento)", async () => {
+  it("guarda el snapshot de comisión según el plan del comercio", async () => {
     conCliente();
+    db.comercio.findFirst.mockResolvedValue({ id: "com1", plan: "PROFESIONAL" });
+    mockCrear();
+    await pedidos.POST(jsonReq(BASE, "POST", CUERPO));
+    const arg = db.pedido.create.mock.calls[0][0];
+    expect(arg.data.comisionPct).toBe(2);
+    expect(arg.data.comisionMonto).toBeCloseTo(1200 * 0.02, 2);
+  });
+
+  it("usa el clienteId de la sesión e ignora el del body (aislamiento)", async () => {    conCliente();
     mockCrear();
     await pedidos.POST(jsonReq(BASE, "POST", { ...CUERPO, clienteId: "ajeno" }));
     const arg = db.pedido.create.mock.calls[0][0];

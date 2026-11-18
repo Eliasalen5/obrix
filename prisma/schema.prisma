@@ -25,6 +25,7 @@ model Usuario {
   solicitudesRevisadas       SolicitudProducto[]
   solicitudesAltaRevisadas   SolicitudAltaComercio[]
   solicitudesAltaSolicitante SolicitudAltaComercio?  @relation("SolicitudAltaSolicitante")
+  suscripcionesAsignadas     SuscripcionComercio[]
 }
 
 model Categoria {
@@ -111,13 +112,35 @@ model Comercio {
   lng           Float
   telefono      String                 @default("")
   activo        Boolean                @default(true)
+  plan          String                 @default("INICIAL") // INICIAL | COMERCIO | PROFESIONAL
+  planVence     DateTime? // vencimiento del plan (facturación manual por ADMIN)
   ownerId       String                 @unique
   owner         Usuario                @relation(fields: [ownerId], references: [id])
   ofertas       Oferta[]
   pedidos       Pedido[]
   solicitudes   SolicitudProducto[]
   solicitudAlta SolicitudAltaComercio?
+  suscripciones SuscripcionComercio[]
   createdAt     DateTime               @default(now())
+}
+
+// Historial de asignaciones de plan (facturación manual por ADMIN, sin pasarela).
+model SuscripcionComercio {
+  id            String    @id @default(cuid())
+  comercioId    String
+  comercio      Comercio  @relation(fields: [comercioId], references: [id])
+  plan          String // INICIAL | COMERCIO | PROFESIONAL
+  precioMensual Float     @default(0)
+  comisionPct   Float     @default(0)
+  estado        String    @default("ACTIVA") // ACTIVA | CANCELADA
+  inicio        DateTime  @default(now())
+  fin           DateTime?
+  motivo        String    @default("")
+  asignadoPorId String?
+  asignadoPor   Usuario?  @relation(fields: [asignadoPorId], references: [id])
+  createdAt     DateTime  @default(now())
+
+  @@index([comercioId, estado])
 }
 
 model Oferta {
@@ -169,6 +192,8 @@ model Pedido {
   cotizacion   Cotizacion?  @relation(fields: [cotizacionId], references: [id])
   estado       String       @default("PENDIENTE") // PENDIENTE | CONFIRMADO | PREPARADO | ENTREGADO | CANCELADO
   total        Float        @default(0)
+  comisionPct  Float        @default(0) // snapshot del % de comisión del plan al crear
+  comisionMonto Float       @default(0) // snapshot del monto de comisión al crear
   createdAt    DateTime     @default(now())
   items        ItemPedido[]
 }

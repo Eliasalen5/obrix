@@ -21,6 +21,8 @@ vi.mock("@/lib/prisma", () => ({
     oferta: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      count: vi.fn(),
       upsert: vi.fn(),
       updateMany: vi.fn(),
       deleteMany: vi.fn(),
@@ -33,7 +35,7 @@ type DbMock = {
   producto: Record<"findMany" | "findUnique" | "count", Mock>;
   comercio: Record<"findUnique", Mock>;
   oferta: Record<
-    "findMany" | "findFirst" | "upsert" | "updateMany" | "deleteMany",
+    "findMany" | "findFirst" | "findUnique" | "count" | "upsert" | "updateMany" | "deleteMany",
     Mock
   >;
 };
@@ -105,6 +107,9 @@ const OF_BASE = "http://localhost/api/comercio/ofertas";
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // Por defecto: producto nuevo y sin publicaciones previas (no toca el límite).
+  db.oferta.findUnique.mockResolvedValue(null);
+  db.oferta.count.mockResolvedValue(0);
 });
 
 describe("comercio — autenticación y autorización", () => {

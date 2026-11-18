@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export type ComercioSession = {
   session: NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
-  comercio: { id: string; nombre: string; activo: boolean };
+  comercio: { id: string; nombre: string; activo: boolean; plan: string };
 };
 
 export async function requireComercioSession(): Promise<ComercioSession> {
@@ -20,7 +20,7 @@ export async function requireComercioSession(): Promise<ComercioSession> {
 
   const comercio = await prisma.comercio.findUnique({
     where: { ownerId: userId },
-    select: { id: true, nombre: true, activo: true },
+    select: { id: true, nombre: true, activo: true, plan: true },
   });
 
   if (!comercio || !comercio.activo) {

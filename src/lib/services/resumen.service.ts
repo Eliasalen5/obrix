@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getPlan } from "@/lib/planes";
 import { redondear2 } from "./pedido-estado";
 
 export type ResumenPedidoReciente = {
@@ -10,6 +11,12 @@ export type ResumenPedidoReciente = {
 };
 
 export type ResumenComercioData = {
+  plan: {
+    id: string;
+    nombre: string;
+    comisionPct: number;
+    limiteProductos: number | null;
+  };
   productos: { publicados: number; activos: number };
   pedidos: { total: number; pendientes: number };
   ventas: { total: number; mes: number; ticketPromedio: number };
@@ -33,6 +40,7 @@ export async function obtenerResumenComercio(
   const desde = inicioDeMes();
 
   const [
+    comercio,
     publicados,
     activos,
     totalPedidos,
@@ -42,6 +50,10 @@ export async function obtenerResumenComercio(
     ventasMes,
     recientes,
   ] = await Promise.all([
+    prisma.comercio.findUnique({
+      where: { id: comercioId },
+      select: { plan: true },
+    }),
     prisma.oferta.count({ where: { comercioId } }),
     prisma.oferta.count({ where: { comercioId, activo: true } }),
     prisma.pedido.count({ where: { comercioId } }),
@@ -78,8 +90,15 @@ export async function obtenerResumenComercio(
   const totalVendido = ventasTotales._sum.total ?? 0;
   const ticketPromedio =
     pedidosVendidos > 0 ? redondear2(totalVendido / pedidosVendidos) : 0;
+  const plan = getPlan(comercio?.plan);
 
   return {
+    plan: {
+      id: plan.id,
+      nombre: plan.nombre,
+      comisionPct: plan.comisionPct,
+      limiteProductos: plan.limiteProductos,
+    },
     productos: { publicados, activos },
     pedidos: { total: totalPedidos, pendientes },
     ventas: {
