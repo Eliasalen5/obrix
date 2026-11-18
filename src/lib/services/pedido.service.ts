@@ -65,10 +65,20 @@ export const pedidoService = {
     });
     if (!cotizacion) return { ok: false, motivo: "NO_COTIZACION" };
 
-    const comercio = await prisma.comercio.findFirst({
-      where: { id: input.comercioId, activo: true },
-      select: { id: true, plan: true },
-    });
+    let comercio: { id: string; plan: string } | null = null;
+    try {
+      comercio = await prisma.comercio.findFirst({
+        where: { id: input.comercioId, activo: true },
+        select: { id: true, plan: true },
+      });
+    } catch {
+      // DB sin migrar: sin columna `plan`, se usa el plan por defecto.
+      const base = await prisma.comercio.findFirst({
+        where: { id: input.comercioId, activo: true },
+        select: { id: true },
+      });
+      comercio = base ? { ...base, plan: "INICIAL" } : null;
+    }
     if (!comercio) return { ok: false, motivo: "NO_COMERCIO" };
 
     const productoIds = [

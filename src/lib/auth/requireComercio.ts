@@ -18,10 +18,20 @@ export async function requireComercioSession(): Promise<ComercioSession> {
     redirect("/ingresar");
   }
 
-  const comercio = await prisma.comercio.findUnique({
-    where: { ownerId: userId },
-    select: { id: true, nombre: true, activo: true, plan: true },
-  });
+  let comercio: ComercioSession["comercio"] | null = null;
+  try {
+    comercio = await prisma.comercio.findUnique({
+      where: { ownerId: userId },
+      select: { id: true, nombre: true, activo: true, plan: true },
+    });
+  } catch {
+    // Compatibilidad si la DB aún no tiene la columna `plan` (migración pendiente).
+    const base = await prisma.comercio.findUnique({
+      where: { ownerId: userId },
+      select: { id: true, nombre: true, activo: true },
+    });
+    comercio = base ? { ...base, plan: "INICIAL" } : null;
+  }
 
   if (!comercio || !comercio.activo) {
     redirect("/comercio/solicitud");

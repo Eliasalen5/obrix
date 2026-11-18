@@ -39,6 +39,13 @@ export async function obtenerResumenComercio(
 ): Promise<ResumenComercioData> {
   const desde = inicioDeMes();
 
+  const comercioPromise = prisma.comercio
+    .findUnique({
+      where: { id: comercioId },
+      select: { plan: true },
+    })
+    .catch(() => null);
+
   const [
     comercio,
     publicados,
@@ -50,10 +57,7 @@ export async function obtenerResumenComercio(
     ventasMes,
     recientes,
   ] = await Promise.all([
-    prisma.comercio.findUnique({
-      where: { id: comercioId },
-      select: { plan: true },
-    }),
+    comercioPromise,
     prisma.oferta.count({ where: { comercioId } }),
     prisma.oferta.count({ where: { comercioId, activo: true } }),
     prisma.pedido.count({ where: { comercioId } }),

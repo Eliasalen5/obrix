@@ -60,18 +60,25 @@ export const ofertaService = {
 
     // El límite de productos del plan solo aplica a publicaciones nuevas.
     if (!existente) {
-      const comercio = await prisma.comercio.findUnique({
-        where: { id: comercioId },
-        select: { plan: true },
-      });
-      const limite = limiteProductosDePlan(comercio?.plan);
+      let plan: string | undefined;
+      try {
+        const comercio = await prisma.comercio.findUnique({
+          where: { id: comercioId },
+          select: { plan: true },
+        });
+        plan = comercio?.plan;
+      } catch {
+        // DB sin migrar: sin columna `plan`, se aplica el plan por defecto.
+        plan = undefined;
+      }
+      const limite = limiteProductosDePlan(plan);
       if (limite !== null) {
         const total = await prisma.oferta.count({ where: { comercioId } });
         if (total >= limite) {
           throw new OfertaError(
             403,
             `Alcanzaste el límite de ${limite} productos del plan ${getPlan(
-              comercio?.plan,
+              plan,
             ).nombre}. Mejorá tu plan para publicar más.`,
           );
         }
