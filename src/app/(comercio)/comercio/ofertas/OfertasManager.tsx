@@ -23,17 +23,30 @@ import {
   type PropuestaProductoInput,
 } from "@/lib/validators/solicitud";
 import { normalizarTexto } from "@/lib/text/busqueda";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  Drawer,
+  EmptyState,
+  Field,
+  Input,
+  Pagination,
+  Select,
+  SkeletonRows,
+  Tabs,
+  Textarea,
+  type BadgeTone,
+  type TabItem,
+} from "@/components/ui";
 
 type Mensaje = { tipo: "ok" | "error" | "aviso"; texto: string };
+type TabId = "productos" | "catalogo" | "propuestas";
 
 type AltaForm = { precio: string; stock: string; marca: string };
-type EditForm = {
-  precio: string;
-  stock: string;
-  marca: string;
-  activo: boolean;
-};
-
+type EditForm = { precio: string; stock: string; marca: string; activo: boolean };
 type PropuestaForm = {
   nombre: string;
   categoriaId: string;
@@ -69,12 +82,18 @@ const PROPUESTA_VACIA: PropuestaForm = {
 const ESTADO_LABEL: Record<EstadoSolicitud, string> = {
   PENDIENTE_REVISION: "Pendiente de revisión",
   APROBADA: "Aprobada",
-  VINCULADA: "Vinculada a producto existente",
+  VINCULADA: "Vinculada",
   RECHAZADA: "Rechazada",
 };
 
-const inputCls =
-  "rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+const ESTADO_TONE: Record<EstadoSolicitud, BadgeTone> = {
+  PENDIENTE_REVISION: "warning",
+  APROBADA: "success",
+  VINCULADA: "info",
+  RECHAZADA: "danger",
+};
+
+const PAGE_SIZE = 50;
 
 function issuesToText(error: ZodError): string {
   return error.issues
@@ -86,9 +105,13 @@ function aNumero(valor: string): number {
   return Number(valor);
 }
 
-const PAGE_SIZE = 50;
+const TH =
+  "px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500";
+const TD = "px-4 py-3 align-middle text-sm text-obrix-black";
 
 export default function OfertasManager() {
+  const [tab, setTab] = useState<TabId>("productos");
+
   const [productos, setProductos] = useState<Producto[]>([]);
   const [totalProductos, setTotalProductos] = useState(0);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -113,6 +136,9 @@ export default function OfertasManager() {
   const [propuestaAbierta, setPropuestaAbierta] = useState(false);
   const [propuesta, setPropuesta] = useState<PropuestaForm>(PROPUESTA_VACIA);
   const [enviandoPropuesta, setEnviandoPropuesta] = useState(false);
+
+  const [aEliminar, setAEliminar] = useState<Oferta | null>(null);
+  const [guardando, setGuardando] = useState(false);
 
   const cargarOfertas = useCallback(async () => {
     const res = await ofertaApi.listOfertas();
@@ -191,9 +217,7 @@ export default function OfertasManager() {
   );
 
   const hayFiltroCatalogo =
-    busqueda.trim() !== "" ||
-    filtroCategoria !== "" ||
-    filtroSubcategoria !== "";
+    busqueda.trim() !== "" || filtroCategoria !== "" || filtroSubcategoria !== "";
 
   const ofertasVisibles = useMemo(() => {
     const q = normalizarTexto(busquedaOfertas);
@@ -224,29 +248,29 @@ export default function OfertasManager() {
     [recargar],
   );
 
-  const activar = useCallback(
-    async (productoId: string) => {
-      const parsed = createOfertaSchema.safeParse({
-        productoId,
-        precio: aNumero(alta.precio),
-        stock: aNumero(alta.stock),
-        marca: alta.marca,
-      });
-      if (!parsed.success) {
-        setMensaje({ tipo: "error", texto: issuesToText(parsed.error) });
-        return;
-      }
-      const ok = await reportar(
-        ofertaApi.upsertOferta(parsed.data),
-        "Oferta activada",
-      );
-      if (ok) {
-        setAltaId(null);
-        setAlta(ALTA_VACIA);
-      }
-    },
-    [alta, reportar],
-  );
+  const activar = useCallback(async () => {
+    if (!altaId) return;
+    const parsed = createOfertaSchema.safeParse({
+      productoId: altaId,
+      precio: aNumero(alta.precio),
+      stock: aNumero(alta.stock),
+      marca: alta.marca,
+    });
+    if (!parsed.success) {
+      setMensaje({ tipo: "error", texto: issuesToText(parsed.error) });
+      return;
+    }
+    setGuardando(true);
+    const ok = await reportar(
+      ofertaApi.upsertOferta(parsed.data),
+      "Producto publicado",
+    );
+    setGuardando(false);
+    if (ok) {
+      setAltaId(null);
+      setAlta(ALTA_VACIA);
+    }
+  }, [altaId, alta, reportar]);
 
   const abrirEdicion = useCallback((o: Oferta) => {
     setEditId(o.id);
@@ -258,33 +282,34 @@ export default function OfertasManager() {
     });
   }, []);
 
-  const guardarEdicion = useCallback(
-    async (id: string) => {
-      const parsed = updateOfertaSchema.safeParse({
-        precio: aNumero(edit.precio),
-        stock: aNumero(edit.stock),
-        marca: edit.marca,
-        activo: edit.activo,
-      });
-      if (!parsed.success) {
-        setMensaje({ tipo: "error", texto: issuesToText(parsed.error) });
-        return;
-      }
-      const ok = await reportar(
-        ofertaApi.updateOferta(id, parsed.data),
-        "Oferta actualizada",
-      );
-      if (ok) setEditId(null);
-    },
-    [edit, reportar],
-  );
+  const guardarEdicion = useCallback(async () => {
+    if (!editId) return;
+    const parsed = updateOfertaSchema.safeParse({
+      precio: aNumero(edit.precio),
+      stock: aNumero(edit.stock),
+      marca: edit.marca,
+      activo: edit.activo,
+    });
+    if (!parsed.success) {
+      setMensaje({ tipo: "error", texto: issuesToText(parsed.error) });
+      return;
+    }
+    setGuardando(true);
+    const ok = await reportar(
+      ofertaApi.updateOferta(editId, parsed.data),
+      "Producto actualizado",
+    );
+    setGuardando(false);
+    if (ok) setEditId(null);
+  }, [editId, edit, reportar]);
 
-  const eliminar = useCallback(
-    async (id: string) => {
-      await reportar(ofertaApi.deleteOferta(id), "Oferta eliminada");
-    },
-    [reportar],
-  );
+  const eliminar = useCallback(async () => {
+    if (!aEliminar) return;
+    setGuardando(true);
+    await reportar(ofertaApi.deleteOferta(aEliminar.id), "Producto quitado");
+    setGuardando(false);
+    setAEliminar(null);
+  }, [aEliminar, reportar]);
 
   const abrirPropuesta = useCallback(() => {
     setPropuesta({ ...PROPUESTA_VACIA, nombre: busqueda });
@@ -342,575 +367,625 @@ export default function OfertasManager() {
     await recargar();
   }, [propuesta, recargar]);
 
+  const productoAlta = productos.find((p) => p.id === altaId) ?? null;
+  const ofertaEdicion = ofertas.find((o) => o.id === editId) ?? null;
+
+  const tabs: ReadonlyArray<TabItem<TabId>> = [
+    { id: "productos", label: "Mis productos", count: ofertas.length },
+    { id: "catalogo", label: "Catálogo maestro", count: totalProductos },
+    { id: "propuestas", label: "Mis propuestas", count: solicitudes.length },
+  ];
+
   return (
-    <div className="mt-4 space-y-6">
-      {mensaje && (
-        <p
-          className={
+    <div className="space-y-5">
+      {mensaje ? (
+        <Alert
+          tone={
             mensaje.tipo === "ok"
-              ? "text-sm text-green-600"
+              ? "success"
               : mensaje.tipo === "aviso"
-                ? "text-sm text-amber-600"
-                : "text-sm text-red-600"
+                ? "warning"
+                : "error"
+          }
+          action={
+            <button
+              type="button"
+              onClick={() => setMensaje(null)}
+              className="text-xs font-medium opacity-70 hover:opacity-100"
+            >
+              Cerrar
+            </button>
           }
         >
           {mensaje.texto}
-        </p>
-      )}
+        </Alert>
+      ) : null}
 
-      <section>
-        <h2 className="text-lg font-medium">
-          Ofertas activas ({ofertas.length})
-        </h2>
-        <input
-          className={`${inputCls} mt-2`}
-          placeholder="Buscar por producto, SKU o marca"
-          value={busquedaOfertas}
-          onChange={(e) => setBusquedaOfertas(e.target.value)}
-        />
-        {cargando ? (
-          <p className="mt-2 text-sm text-gray-500">Cargando…</p>
-        ) : ofertas.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-500">
-            Todavía no activaste productos.
-          </p>
-        ) : ofertasVisibles.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-500">
-            Sin resultados para esa búsqueda.
-          </p>
-        ) : (
-          <table className="mt-2 w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1 pr-2">Producto</th>
-                <th className="py-1 pr-2">Precio</th>
-                <th className="py-1 pr-2">Stock</th>
-                <th className="py-1 pr-2">Marca</th>
-                <th className="py-1 pr-2">Activo</th>
-                <th className="py-1" />
-              </tr>
-            </thead>
-            <tbody>
-              {ofertasVisibles.map((o) =>
-                editId === o.id ? (
-                  <tr key={o.id} className="border-b">
-                    <td className="py-1 pr-2">
-                      {o.producto?.nombre ?? o.productoId}
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inputCls}
-                        inputMode="decimal"
-                        value={edit.precio}
-                        onChange={(e) =>
-                          setEdit({ ...edit, precio: e.target.value })
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inputCls}
-                        inputMode="numeric"
-                        value={edit.stock}
-                        onChange={(e) =>
-                          setEdit({ ...edit, stock: e.target.value })
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        className={inputCls}
-                        value={edit.marca}
-                        onChange={(e) =>
-                          setEdit({ ...edit, marca: e.target.value })
-                        }
-                      />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input
-                        type="checkbox"
-                        checked={edit.activo}
-                        onChange={(e) =>
-                          setEdit({ ...edit, activo: e.target.checked })
-                        }
-                      />
-                    </td>
-                    <td className="py-1">
-                      <button
-                        onClick={() => void guardarEdicion(o.id)}
-                        className="mr-2 text-blue-600"
-                      >
-                        Guardar
-                      </button>
-                      <button
-                        onClick={() => setEditId(null)}
-                        className="text-gray-500"
-                      >
-                        Cancelar
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={o.id} className="border-b">
-                    <td className="py-1 pr-2">
-                      {o.producto?.nombre ?? o.productoId}
-                    </td>
-                    <td className="py-1 pr-2">{o.precio}</td>
-                    <td className="py-1 pr-2">{o.stock === -1 ? "—" : o.stock}</td>
-                    <td className="py-1 pr-2">{o.marca || "—"}</td>
-                    <td className="py-1 pr-2">{o.activo ? "Sí" : "No"}</td>
-                    <td className="py-1">
-                      <button
-                        onClick={() => abrirEdicion(o)}
-                        className="mr-2 text-blue-600"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => void eliminar(o.id)}
-                        className="text-red-600"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ),
-              )}
-            </tbody>
-          </table>
-        )}
-      </section>
+      <Tabs items={tabs} value={tab} onChange={setTab} />
 
-      <section>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-medium">
-            Catálogo maestro ({totalProductos})
-          </h2>
-          <button
-            type="button"
-            onClick={abrirPropuesta}
-            className="rounded border border-blue-600 px-3 py-1 text-sm text-blue-600"
-          >
-            + Proponer producto nuevo
-          </button>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <input
-            className={`${inputCls} min-w-56`}
-            placeholder="Buscar por nombre, SKU, marca o unidad"
-            value={busqueda}
-            onChange={(e) => {
-              setBusqueda(e.target.value);
-              setOffset(0);
-            }}
-          />
-          <select
-            className={inputCls}
-            value={filtroCategoria}
-            onChange={(e) => {
-              setFiltroCategoria(e.target.value);
-              setFiltroSubcategoria("");
-              setOffset(0);
-            }}
-          >
-            <option value="">Todas las categorías</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-          <select
-            className={inputCls}
-            value={filtroSubcategoria}
-            onChange={(e) => {
-              setFiltroSubcategoria(e.target.value);
-              setOffset(0);
-            }}
-            disabled={!filtroCategoria}
-          >
-            <option value="">Todas las subcategorías</option>
-            {subcategoriasDe(filtroCategoria).map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre}
-              </option>
-            ))}
-          </select>
-          <span className="text-sm text-gray-500">
-            Mostrando {productos.length} de {totalProductos}
-          </span>
-          {hayFiltroCatalogo && (
-            <button
-              type="button"
-              onClick={() => {
-                setBusqueda("");
-                setFiltroCategoria("");
+      {tab === "productos" ? (
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
+            <Input
+              placeholder="Buscar por producto, SKU o marca"
+              value={busquedaOfertas}
+              onChange={(e) => setBusquedaOfertas(e.target.value)}
+              className="max-w-xs"
+            />
+            <span className="text-xs text-neutral-500">
+              {ofertas.length} publicados
+            </span>
+          </div>
+
+          {cargando ? (
+            <SkeletonRows rows={4} />
+          ) : ofertas.length === 0 ? (
+            <EmptyState
+              className="m-5 border-0 bg-transparent"
+              title="Todavía no publicaste productos"
+              description="Activá productos del catálogo maestro para empezar a vender."
+              action={
+                <Button size="sm" onClick={() => setTab("catalogo")}>
+                  Ir al catálogo
+                </Button>
+              }
+            />
+          ) : ofertasVisibles.length === 0 ? (
+            <EmptyState
+              className="m-5 border-0 bg-transparent"
+              title="Sin resultados"
+              description="No encontramos productos con esa búsqueda."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] border-collapse">
+                <thead className="bg-obrix-gray/60">
+                  <tr>
+                    <th className={TH}>Producto</th>
+                    <th className={TH}>Precio</th>
+                    <th className={TH}>Stock</th>
+                    <th className={TH}>Marca</th>
+                    <th className={TH}>Estado</th>
+                    <th className={TH} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {ofertasVisibles.map((o) => (
+                    <tr key={o.id} className="border-t border-neutral-100">
+                      <td className={TD}>
+                        <p className="font-medium">
+                          {o.producto?.nombre ?? o.productoId}
+                        </p>
+                        {o.producto?.sku ? (
+                          <p className="text-xs text-neutral-500">
+                            {o.producto.sku}
+                          </p>
+                        ) : null}
+                      </td>
+                      <td className={TD}>{o.precio}</td>
+                      <td className={TD}>{o.stock === -1 ? "—" : o.stock}</td>
+                      <td className={TD}>{o.marca || "—"}</td>
+                      <td className={TD}>
+                        <Badge tone={o.activo ? "success" : "neutral"} dot>
+                          {o.activo ? "Activo" : "Pausado"}
+                        </Badge>
+                      </td>
+                      <td className={`${TD} text-right`}>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => abrirEdicion(o)}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => setAEliminar(o)}
+                          >
+                            Quitar
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      ) : null}
+
+      {tab === "catalogo" ? (
+        <Card>
+          <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 px-4 py-3">
+            <Input
+              placeholder="Buscar por nombre, SKU, marca o unidad"
+              value={busqueda}
+              onChange={(e) => {
+                setBusqueda(e.target.value);
+                setOffset(0);
+              }}
+              className="min-w-56 flex-1"
+            />
+            <Select
+              value={filtroCategoria}
+              onChange={(e) => {
+                setFiltroCategoria(e.target.value);
                 setFiltroSubcategoria("");
                 setOffset(0);
               }}
-              className="text-sm text-blue-600 hover:underline"
+              className="w-auto"
             >
-              Limpiar
-            </button>
-          )}
-        </div>
-        <table className="mt-2 w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-1 pr-2">SKU</th>
-              <th className="py-1 pr-2">Producto</th>
-              <th className="py-1 pr-2">Subcategoría</th>
-              <th className="py-1 pr-2">Estado</th>
-              <th className="py-1" />
-            </tr>
-          </thead>
-          <tbody>
-            {productos.map((p) => {
-              const yaActivado = ofertaPorProducto.has(p.id);
-              return altaId === p.id ? (
-                <tr key={p.id} className="border-b">
-                  <td className="py-1 pr-2">{p.sku}</td>
-                  <td className="py-1 pr-2">{p.nombre}</td>
-                  <td className="py-1 pr-2">{p.subcategoria?.nombre ?? "—"}</td>
-                  <td className="py-1 pr-2">
-                    <input
-                      placeholder="Precio"
-                      className={inputCls}
-                      inputMode="decimal"
-                      value={alta.precio}
-                      onChange={(e) =>
-                        setAlta({ ...alta, precio: e.target.value })
-                      }
-                    />
-                    <input
-                      placeholder="Stock"
-                      className={`${inputCls} ml-2`}
-                      inputMode="numeric"
-                      value={alta.stock}
-                      onChange={(e) =>
-                        setAlta({ ...alta, stock: e.target.value })
-                      }
-                    />
-                    <input
-                      placeholder="Marca"
-                      className={`${inputCls} ml-2`}
-                      value={alta.marca}
-                      onChange={(e) =>
-                        setAlta({ ...alta, marca: e.target.value })
-                      }
-                    />
-                  </td>
-                  <td className="py-1">
-                    <button
-                      onClick={() => void activar(p.id)}
-                      className="mr-2 text-blue-600"
-                    >
-                      Guardar
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAltaId(null);
-                        setAlta(ALTA_VACIA);
-                      }}
-                      className="text-gray-500"
-                    >
-                      Cancelar
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={p.id} className="border-b">
-                  <td className="py-1 pr-2">{p.sku}</td>
-                  <td className="py-1 pr-2">{p.nombre}</td>
-                  <td className="py-1 pr-2">{p.subcategoria?.nombre ?? "—"}</td>
-                  <td className="py-1 pr-2">{yaActivado ? "Activado" : "—"}</td>
-                  <td className="py-1">
-                    {yaActivado ? (
-                      <span className="text-gray-400">Ya activado</span>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setAltaId(p.id);
-                          setAlta(ALTA_VACIA);
-                        }}
-                        className="text-blue-600"
-                      >
-                        Activar
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {productos.length === 0 && !cargandoCatalogo && (
-              <tr>
-                <td colSpan={5} className="py-2 text-gray-500">
-                  {hayFiltroCatalogo ? (
-                    <span>
-                      Sin resultados para esa búsqueda.{" "}
-                      <button
-                        type="button"
-                        onClick={abrirPropuesta}
-                        className="text-blue-600 hover:underline"
-                      >
-                        ¿Proponer &quot;{busqueda}&quot; al catálogo?
-                      </button>
-                    </span>
-                  ) : (
-                    "Sin productos."
-                  )}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-          <button
-            type="button"
-            disabled={offset === 0 || cargandoCatalogo}
-            onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-            className="rounded border border-zinc-300 px-2 py-1 disabled:opacity-40 dark:border-zinc-700"
-          >
-            Anterior
-          </button>
-          <span className="text-gray-500">
-            Página {Math.floor(offset / PAGE_SIZE) + 1} de{" "}
-            {Math.max(1, Math.ceil(totalProductos / PAGE_SIZE))}
-          </span>
-          <button
-            type="button"
-            disabled={offset + PAGE_SIZE >= totalProductos || cargandoCatalogo}
-            onClick={() => setOffset(offset + PAGE_SIZE)}
-            className="rounded border border-zinc-300 px-2 py-1 disabled:opacity-40 dark:border-zinc-700"
-          >
-            Siguiente
-          </button>
-          {cargandoCatalogo && (
-            <span className="text-gray-500">Cargando catálogo…</span>
-          )}
-        </div>
-
-        {propuestaAbierta && (
-          <div className="mt-4 rounded border border-zinc-300 p-4 dark:border-zinc-700">
-            <h3 className="text-base font-medium">Proponer producto nuevo</h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Se enviará al administrador para su revisión. No se publica hasta
-              ser aprobado.
-            </p>
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <label className="flex flex-col text-sm">
-                Nombre *
-                <input
-                  className={inputCls}
-                  value={propuesta.nombre}
-                  onChange={(e) =>
-                    setPropuesta({ ...propuesta, nombre: e.target.value })
-                  }
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                Categoría *
-                <select
-                  className={inputCls}
-                  value={propuesta.categoriaId}
-                  onChange={(e) =>
-                    setPropuesta({
-                      ...propuesta,
-                      categoriaId: e.target.value,
-                      subcategoriaId: "",
-                    })
-                  }
-                >
-                  <option value="">Elegí una categoría</option>
-                  {categorias.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col text-sm">
-                Subcategoría
-                <select
-                  className={inputCls}
-                  value={propuesta.subcategoriaId}
-                  onChange={(e) =>
-                    setPropuesta({
-                      ...propuesta,
-                      subcategoriaId: e.target.value,
-                    })
-                  }
-                  disabled={!propuesta.categoriaId}
-                >
-                  <option value="">Sin subcategoría</option>
-                  {subcategoriasDe(propuesta.categoriaId).map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nombre}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col text-sm">
-                Presentación / medida * (ej: bolsa 50 kg)
-                <input
-                  className={inputCls}
-                  value={propuesta.unidad}
-                  onChange={(e) =>
-                    setPropuesta({ ...propuesta, unidad: e.target.value })
-                  }
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                Marca
-                <input
-                  className={inputCls}
-                  value={propuesta.marca}
-                  onChange={(e) =>
-                    setPropuesta({ ...propuesta, marca: e.target.value })
-                  }
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                Fabricante
-                <input
-                  className={inputCls}
-                  value={propuesta.fabricante}
-                  onChange={(e) =>
-                    setPropuesta({ ...propuesta, fabricante: e.target.value })
-                  }
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                Código de barras
-                <input
-                  className={inputCls}
-                  value={propuesta.codigoBarras}
-                  onChange={(e) =>
-                    setPropuesta({ ...propuesta, codigoBarras: e.target.value })
-                  }
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                Código de fabricante
-                <input
-                  className={inputCls}
-                  value={propuesta.codigoFabricante}
-                  onChange={(e) =>
-                    setPropuesta({
-                      ...propuesta,
-                      codigoFabricante: e.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                Imagen (URL, opcional)
-                <input
-                  className={inputCls}
-                  value={propuesta.imagenUrl}
-                  onChange={(e) =>
-                    setPropuesta({ ...propuesta, imagenUrl: e.target.value })
-                  }
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                Precio inicial *
-                <input
-                  className={inputCls}
-                  inputMode="decimal"
-                  value={propuesta.precio}
-                  onChange={(e) =>
-                    setPropuesta({ ...propuesta, precio: e.target.value })
-                  }
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                Stock inicial
-                <input
-                  className={inputCls}
-                  inputMode="numeric"
-                  value={propuesta.stock}
-                  onChange={(e) =>
-                    setPropuesta({ ...propuesta, stock: e.target.value })
-                  }
-                />
-              </label>
-            </div>
-            <label className="mt-2 flex flex-col text-sm">
-              Descripción (opcional)
-              <textarea
-                className={inputCls}
-                rows={2}
-                value={propuesta.descripcion}
-                onChange={(e) =>
-                  setPropuesta({ ...propuesta, descripcion: e.target.value })
-                }
-              />
-            </label>
-            <div className="mt-3">
-              <button
-                type="button"
-                disabled={enviandoPropuesta}
-                onClick={() => void enviarPropuesta()}
-                className="rounded bg-blue-600 px-3 py-1 text-sm text-white disabled:opacity-50"
-              >
-                {enviandoPropuesta ? "Enviando…" : "Enviar solicitud"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPropuestaAbierta(false);
-                  setPropuesta(PROPUESTA_VACIA);
-                }}
-                className="ml-2 text-sm text-gray-500"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h2 className="text-lg font-medium">
-          Mis solicitudes ({solicitudes.length})
-        </h2>
-        {cargando ? (
-          <p className="mt-2 text-sm text-gray-500">Cargando…</p>
-        ) : solicitudes.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-500">
-            Todavía no propusiste productos.
-          </p>
-        ) : (
-          <table className="mt-2 w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-1 pr-2">Producto propuesto</th>
-                <th className="py-1 pr-2">Presentación</th>
-                <th className="py-1 pr-2">Estado</th>
-                <th className="py-1 pr-2">Detalle</th>
-              </tr>
-            </thead>
-            <tbody>
-              {solicitudes.map((s) => (
-                <tr key={s.id} className="border-b">
-                  <td className="py-1 pr-2">{s.datos.nombre}</td>
-                  <td className="py-1 pr-2">{s.datos.unidad}</td>
-                  <td className="py-1 pr-2">{ESTADO_LABEL[s.estado]}</td>
-                  <td className="py-1 pr-2 text-gray-500">
-                    {s.estado === "RECHAZADA"
-                      ? s.motivoRechazo
-                      : s.producto
-                        ? `→ ${s.producto.nombre}`
-                        : "—"}
-                  </td>
-                </tr>
+              <option value="">Todas las categorías</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
               ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+            </Select>
+            <Select
+              value={filtroSubcategoria}
+              onChange={(e) => {
+                setFiltroSubcategoria(e.target.value);
+                setOffset(0);
+              }}
+              disabled={!filtroCategoria}
+              className="w-auto"
+            >
+              <option value="">Todas las subcategorías</option>
+              {subcategoriasDe(filtroCategoria).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre}
+                </option>
+              ))}
+            </Select>
+            {hayFiltroCatalogo ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setBusqueda("");
+                  setFiltroCategoria("");
+                  setFiltroSubcategoria("");
+                  setOffset(0);
+                }}
+              >
+                Limpiar
+              </Button>
+            ) : null}
+            <Button
+              size="sm"
+              variant="secondary"
+              className="ml-auto"
+              onClick={abrirPropuesta}
+            >
+              Proponer producto
+            </Button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] border-collapse">
+              <thead className="bg-obrix-gray/60">
+                <tr>
+                  <th className={TH}>SKU</th>
+                  <th className={TH}>Producto</th>
+                  <th className={TH}>Subcategoría</th>
+                  <th className={TH}>Estado</th>
+                  <th className={TH} />
+                </tr>
+              </thead>
+              <tbody>
+                {productos.map((p) => {
+                  const yaActivado = ofertaPorProducto.has(p.id);
+                  return (
+                    <tr key={p.id} className="border-t border-neutral-100">
+                      <td className={`${TD} text-xs text-neutral-500`}>
+                        {p.sku}
+                      </td>
+                      <td className={TD}>{p.nombre}</td>
+                      <td className={`${TD} text-neutral-500`}>
+                        {p.subcategoria?.nombre ?? "—"}
+                      </td>
+                      <td className={TD}>
+                        {yaActivado ? (
+                          <Badge tone="success" dot>
+                            Publicado
+                          </Badge>
+                        ) : (
+                          <Badge tone="neutral">Disponible</Badge>
+                        )}
+                      </td>
+                      <td className={`${TD} text-right`}>
+                        {yaActivado ? (
+                          <span className="text-xs text-neutral-400">
+                            Ya publicado
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setAltaId(p.id);
+                              setAlta(ALTA_VACIA);
+                            }}
+                          >
+                            Publicar
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {productos.length === 0 && !cargandoCatalogo ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-500">
+                      {hayFiltroCatalogo ? (
+                        <span>
+                          Sin resultados.{" "}
+                          <button
+                            type="button"
+                            onClick={abrirPropuesta}
+                            className="font-medium text-obrix-orange hover:underline"
+                          >
+                            ¿Proponer &quot;{busqueda}&quot; al catálogo?
+                          </button>
+                        </span>
+                      ) : (
+                        "Sin productos en el catálogo."
+                      )}
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 px-4 py-3">
+            <span className="text-xs text-neutral-500">
+              Mostrando {productos.length} de {totalProductos}
+            </span>
+            <Pagination
+              page={Math.floor(offset / PAGE_SIZE) + 1}
+              pageCount={Math.max(1, Math.ceil(totalProductos / PAGE_SIZE))}
+              onPrevious={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+              onNext={() => setOffset(offset + PAGE_SIZE)}
+              disabled={cargandoCatalogo}
+            />
+          </div>
+        </Card>
+      ) : null}
+
+      {tab === "propuestas" ? (
+        <Card>
+          <div className="border-b border-neutral-200 px-4 py-3">
+            <h2 className="text-sm font-semibold text-obrix-black">
+              Productos propuestos
+            </h2>
+            <p className="text-xs text-neutral-500">
+              El administrador revisa cada propuesta antes de publicarla.
+            </p>
+          </div>
+          {cargando ? (
+            <SkeletonRows rows={3} />
+          ) : solicitudes.length === 0 ? (
+            <EmptyState
+              className="m-5 border-0 bg-transparent"
+              title="Todavía no propusiste productos"
+              description="Si falta un producto en el catálogo, podés proponerlo desde la pestaña Catálogo."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px] border-collapse">
+                <thead className="bg-obrix-gray/60">
+                  <tr>
+                    <th className={TH}>Producto</th>
+                    <th className={TH}>Presentación</th>
+                    <th className={TH}>Estado</th>
+                    <th className={TH}>Detalle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {solicitudes.map((s) => (
+                    <tr key={s.id} className="border-t border-neutral-100">
+                      <td className={TD}>{s.datos.nombre}</td>
+                      <td className={`${TD} text-neutral-500`}>
+                        {s.datos.unidad}
+                      </td>
+                      <td className={TD}>
+                        <Badge tone={ESTADO_TONE[s.estado]}>
+                          {ESTADO_LABEL[s.estado]}
+                        </Badge>
+                      </td>
+                      <td className={`${TD} text-neutral-500`}>
+                        {s.estado === "RECHAZADA"
+                          ? s.motivoRechazo
+                          : s.producto
+                            ? `→ ${s.producto.nombre}`
+                            : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      ) : null}
+
+      <Drawer
+        open={Boolean(altaId)}
+        onClose={() => {
+          setAltaId(null);
+          setAlta(ALTA_VACIA);
+        }}
+        title="Publicar producto"
+        description={productoAlta?.nombre}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAltaId(null);
+                setAlta(ALTA_VACIA);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button loading={guardando} onClick={() => void activar()}>
+              Publicar
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <Field label="Precio" required htmlFor="alta-precio">
+            <Input
+              id="alta-precio"
+              inputMode="decimal"
+              placeholder="Ej: 12500"
+              value={alta.precio}
+              onChange={(e) => setAlta({ ...alta, precio: e.target.value })}
+            />
+          </Field>
+          <Field
+            label="Stock"
+            hint="-1 = sin control de stock"
+            htmlFor="alta-stock"
+          >
+            <Input
+              id="alta-stock"
+              inputMode="numeric"
+              value={alta.stock}
+              onChange={(e) => setAlta({ ...alta, stock: e.target.value })}
+            />
+          </Field>
+          <Field label="Marca (opcional)" htmlFor="alta-marca">
+            <Input
+              id="alta-marca"
+              value={alta.marca}
+              onChange={(e) => setAlta({ ...alta, marca: e.target.value })}
+            />
+          </Field>
+        </div>
+      </Drawer>
+
+      <Drawer
+        open={Boolean(editId)}
+        onClose={() => setEditId(null)}
+        title="Editar producto"
+        description={ofertaEdicion?.producto?.nombre}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditId(null)}>
+              Cancelar
+            </Button>
+            <Button loading={guardando} onClick={() => void guardarEdicion()}>
+              Guardar
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <Field label="Precio" required htmlFor="edit-precio">
+            <Input
+              id="edit-precio"
+              inputMode="decimal"
+              value={edit.precio}
+              onChange={(e) => setEdit({ ...edit, precio: e.target.value })}
+            />
+          </Field>
+          <Field label="Stock" hint="-1 = sin control" htmlFor="edit-stock">
+            <Input
+              id="edit-stock"
+              inputMode="numeric"
+              value={edit.stock}
+              onChange={(e) => setEdit({ ...edit, stock: e.target.value })}
+            />
+          </Field>
+          <Field label="Marca" htmlFor="edit-marca">
+            <Input
+              id="edit-marca"
+              value={edit.marca}
+              onChange={(e) => setEdit({ ...edit, marca: e.target.value })}
+            />
+          </Field>
+          <label className="flex items-center gap-2 text-sm text-obrix-black">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-neutral-300 text-obrix-orange focus:ring-obrix-orange"
+              checked={edit.activo}
+              onChange={(e) => setEdit({ ...edit, activo: e.target.checked })}
+            />
+            Producto activo (visible para clientes)
+          </label>
+        </div>
+      </Drawer>
+
+      <Drawer
+        open={propuestaAbierta}
+        onClose={() => {
+          setPropuestaAbierta(false);
+          setPropuesta(PROPUESTA_VACIA);
+        }}
+        title="Proponer producto nuevo"
+        description="Se envía al administrador para su revisión."
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPropuestaAbierta(false);
+                setPropuesta(PROPUESTA_VACIA);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              loading={enviandoPropuesta}
+              onClick={() => void enviarPropuesta()}
+            >
+              Enviar solicitud
+            </Button>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Nombre" required className="sm:col-span-2">
+            <Input
+              value={propuesta.nombre}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, nombre: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Categoría" required>
+            <Select
+              value={propuesta.categoriaId}
+              onChange={(e) =>
+                setPropuesta({
+                  ...propuesta,
+                  categoriaId: e.target.value,
+                  subcategoriaId: "",
+                })
+              }
+            >
+              <option value="">Elegí una categoría</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Subcategoría">
+            <Select
+              value={propuesta.subcategoriaId}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, subcategoriaId: e.target.value })
+              }
+              disabled={!propuesta.categoriaId}
+            >
+              <option value="">Sin subcategoría</option>
+              {subcategoriasDe(propuesta.categoriaId).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Presentación / medida" required hint="Ej: bolsa 50 kg">
+            <Input
+              value={propuesta.unidad}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, unidad: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Marca">
+            <Input
+              value={propuesta.marca}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, marca: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Fabricante">
+            <Input
+              value={propuesta.fabricante}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, fabricante: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Código de barras">
+            <Input
+              value={propuesta.codigoBarras}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, codigoBarras: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Código de fabricante">
+            <Input
+              value={propuesta.codigoFabricante}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, codigoFabricante: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Imagen (URL, opcional)" className="sm:col-span-2">
+            <Input
+              value={propuesta.imagenUrl}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, imagenUrl: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Precio inicial" required>
+            <Input
+              inputMode="decimal"
+              value={propuesta.precio}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, precio: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Stock inicial">
+            <Input
+              inputMode="numeric"
+              value={propuesta.stock}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, stock: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Descripción (opcional)" className="sm:col-span-2">
+            <Textarea
+              rows={3}
+              value={propuesta.descripcion}
+              onChange={(e) =>
+                setPropuesta({ ...propuesta, descripcion: e.target.value })
+              }
+            />
+          </Field>
+        </div>
+      </Drawer>
+
+      <ConfirmDialog
+        open={Boolean(aEliminar)}
+        title="Quitar producto"
+        description={
+          aEliminar
+            ? `Se quitará "${aEliminar.producto?.nombre ?? "el producto"}" de tus publicaciones.`
+            : undefined
+        }
+        confirmLabel="Quitar"
+        danger
+        loading={guardando}
+        onConfirm={() => void eliminar()}
+        onCancel={() => setAEliminar(null)}
+      />
     </div>
   );
 }

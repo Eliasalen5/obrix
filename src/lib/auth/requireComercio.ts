@@ -4,7 +4,12 @@ import { authOptions } from "./options";
 import { ROLES, type Role } from "./constants";
 import { prisma } from "@/lib/prisma";
 
-export async function requireComercioSession() {
+export type ComercioSession = {
+  session: NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
+  comercio: { id: string; nombre: string; activo: boolean };
+};
+
+export async function requireComercioSession(): Promise<ComercioSession> {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: Role } | undefined)?.role;
   const userId = (session?.user as { id?: string } | undefined)?.id;
@@ -15,12 +20,12 @@ export async function requireComercioSession() {
 
   const comercio = await prisma.comercio.findUnique({
     where: { ownerId: userId },
-    select: { activo: true },
+    select: { id: true, nombre: true, activo: true },
   });
 
   if (!comercio || !comercio.activo) {
     redirect("/comercio/solicitud");
   }
 
-  return session;
+  return { session, comercio };
 }

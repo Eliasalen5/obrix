@@ -1,10 +1,13 @@
 import { requireComercioSession } from "@/lib/auth/requireComercio";
+import CommerceShell from "@/components/layout/comercio/CommerceShell";
 
 export default async function ComercioLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireComercioSession();
-  return <>{children}</>;
+  const { comercio } = await requireComercioSession();
+  return (
+    <CommerceShell comercioNombre={comercio.nombre}>{children}</CommerceShell>
+  );
 }
