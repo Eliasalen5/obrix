@@ -97,6 +97,7 @@ export default function NavBar() {
   const [busquedaOpen, setBusquedaOpen] = useState(false);
   const [ubicacion, setUbicacion] = useState("");
   const [consulta, setConsulta] = useState("");
+  const [hydrated, setHydrated] = useState(false);
 
   const categoriasRef = useRef<HTMLDivElement>(null);
   const cuentaRef = useRef<HTMLDivElement>(null);
@@ -104,6 +105,10 @@ export default function NavBar() {
   const enlacesCuenta = enlacesDeCuenta(role);
   const nombreCuenta =
     session?.user?.name?.split(" ")[0] || (role ? "Mi cuenta" : "Ingresar");
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     const guardada = window.localStorage.getItem(UBICACION_KEY);
@@ -378,7 +383,7 @@ export default function NavBar() {
                   />
                   <circle cx="12" cy="7" r="4" />
                 </Icon>
-                {status === "loading" ? "…" : nombreCuenta}
+                {hydrated && status === "loading" ? "…" : nombreCuenta}
               </button>
 
               {cuentaOpen && (
