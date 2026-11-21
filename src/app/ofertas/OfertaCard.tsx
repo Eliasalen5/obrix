@@ -1,13 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { guardarProyectoPendiente } from "@/lib/proyecto/pendiente";
-
-const money = new Intl.NumberFormat("es-AR", {
-  style: "currency",
-  currency: "ARS",
-  maximumFractionDigits: 0,
-});
 
 type OfertaCardProps = {
   productoNombre: string;
@@ -30,6 +25,16 @@ export default function OfertaCard({
   comercioNombre,
   comercioDireccion,
 }: OfertaCardProps) {
+  const money = useMemo(
+    () =>
+      new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        maximumFractionDigits: 0,
+      }),
+    []
+  );
+
   const detalle = [marca, presentacion, unidad].filter(Boolean).join(" · ");
 
   return (
