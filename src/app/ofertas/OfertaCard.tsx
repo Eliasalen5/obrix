@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { guardarProyectoPendiente } from "@/lib/proyecto/pendiente";
 
@@ -9,7 +8,7 @@ type OfertaCardProps = {
   marca: string;
   presentacion: string;
   unidad: string;
-  precio: number;
+  precioFormateado: string;
   categoria: string;
   comercioNombre: string;
   comercioDireccion: string;
@@ -20,21 +19,11 @@ export default function OfertaCard({
   marca,
   presentacion,
   unidad,
-  precio,
+  precioFormateado,
   categoria,
   comercioNombre,
   comercioDireccion,
 }: OfertaCardProps) {
-  const money = useMemo(
-    () =>
-      new Intl.NumberFormat("es-AR", {
-        style: "currency",
-        currency: "ARS",
-        maximumFractionDigits: 0,
-      }),
-    []
-  );
-
   const detalle = [marca, presentacion, unidad].filter(Boolean).join(" · ");
 
   return (
@@ -52,7 +41,7 @@ export default function OfertaCard({
       {detalle && <p className="mt-1 text-sm text-neutral-500">{detalle}</p>}
 
       <p className="mt-4 text-2xl font-bold text-obrix-black">
-        {money.format(precio)}
+        {precioFormateado}
       </p>
 
       <div className="mt-4 border-t border-neutral-200 pt-3 text-sm">

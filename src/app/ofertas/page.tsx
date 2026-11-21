@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { CATEGORIAS, subcategoriasDe } from "@/lib/catalogo/categorias";
 import { buscarOfertasPublicas } from "@/lib/ofertas/buscarOfertas";
+import { money } from "@/lib/ofertas/presentacion";
 import OfertaCard from "./OfertaCard";
 
 export const dynamic = "force-dynamic";
@@ -215,7 +216,7 @@ export default async function OfertasPage({ searchParams }: Props) {
                 marca={oferta.marca || oferta.producto.marca}
                 presentacion={oferta.presentacion}
                 unidad={oferta.producto.unidad}
-                precio={oferta.precio}
+                precioFormateado={money.format(oferta.precio)}
                 categoria={oferta.producto.categoria.nombre}
                 comercioNombre={oferta.comercio.nombre}
                 comercioDireccion={oferta.comercio.direccion}
